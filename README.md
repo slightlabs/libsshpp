@@ -3,16 +3,17 @@
 A modern **C++17** wrapper around [libssh](https://www.libssh.org/), packaged with **CMake** and
 **Conan 2**.
 
-> **Status: M0 + M1 + M2 (partial) implemented.** `Library`, error handling, `Session`,
+> **Status: M0 + M1 + M2 implemented.** `Library`, error handling, `Session`,
 > `SessionOptions`, authenticators, `Key`/PKI, `KnownHosts`, `HostKeyVerifier` policies,
 > `Channel`, `Exec`, and the SFTP module (`sftp::Sftp`/`File`/`Directory`, transfer
-> helpers with path-traversal hardening) are implemented and tested against a real
-> `sshd` — see [tests/](tests/), [examples/01_exec.cpp](examples/01_exec.cpp).
-> SFTP's pipelined `ReadAhead`/`WriteBehind` I/O, SCP, port forwarding, X11 and the
-> server module (M3 in [11 — Roadmap](docs/design/11-versioning-and-roadmap.md)) are
-> **not implemented yet**; their CMake options (`LIBSSHPP_WITH_SCP` etc.) default to
-> `OFF` until they land. The design documents in [`docs/design/`](docs/design/README.md)
-> remain the normative reference — code that contradicts them is a bug in one or the other.
+> helpers with path-traversal hardening, and pipelined `File::ReadAhead`/`WriteBehind`)
+> are implemented and tested against a real `sshd` — see [tests/](tests/),
+> [examples/01_exec.cpp](examples/01_exec.cpp).
+> SCP, port forwarding, X11 and the server module (M3 in
+> [11 — Roadmap](docs/design/11-versioning-and-roadmap.md)) are **not implemented yet**;
+> their CMake options (`LIBSSHPP_WITH_SCP` etc.) default to `OFF` until they land.
+> The design documents in [`docs/design/`](docs/design/README.md) remain the normative
+> reference — code that contradicts them is a bug in one or the other.
 
 ---
 

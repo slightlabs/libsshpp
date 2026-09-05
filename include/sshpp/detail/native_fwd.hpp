@@ -18,6 +18,7 @@ struct sftp_file_struct;
 struct sftp_dir_struct;
 struct ssh_scp_struct;
 struct ssh_connector_struct;
+struct sftp_aio_struct;
 
 namespace sshpp {
 
@@ -32,5 +33,6 @@ using native_sftp_file = ::sftp_file_struct*;
 using native_sftp_dir  = ::sftp_dir_struct*;
 using native_scp       = ::ssh_scp_struct*;
 using native_connector = ::ssh_connector_struct*;
+using native_sftp_aio  = ::sftp_aio_struct*;
 
 } // namespace sshpp

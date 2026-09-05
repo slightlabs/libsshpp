@@ -86,3 +86,53 @@ TEST_CASE("SFTP file round trip against a real sshd", "[integration][sftp]") {
 
     std::filesystem::remove_all(tmp_dir);
 }
+
+TEST_CASE("SFTP pipelined ReadAhead/WriteBehind round trip", "[integration][sftp]") {
+    Session session = make_connected_session();
+
+    auto sftp_result = session.try_open_sftp();
+    REQUIRE(sftp_result.has_value());
+    sftp::Sftp sftp_session = std::move(*sftp_result);
+
+    auto tmp_dir = std::filesystem::temp_directory_path() / "sshpp_sftp_aio_test";
+    std::filesystem::create_directories(tmp_dir);
+    RemotePath remote_file = tmp_dir.string() + "/pipelined.bin";
+
+    // A few MiB so the transfer spans multiple chunks at the small chunk size below.
+    std::string content;
+    content.reserve(4 * 1024 * 1024);
+    for (int i = 0; i < 4 * 1024 * 1024; ++i) content.push_back(static_cast<char>('a' + (i % 26)));
+
+    {
+        auto file = sftp_session.try_open(remote_file, sftp::OpenMode::write | sftp::OpenMode::create |
+                                                        sftp::OpenMode::truncate);
+        REQUIRE(file.has_value());
+        sftp::File::WriteBehind writer(*file, /*chunk=*/64 * 1024, /*depth=*/8);
+        auto write_result = writer.try_write(ByteView(content));
+        REQUIRE(write_result.has_value());
+        auto flush_result = writer.try_flush();
+        REQUIRE(flush_result.has_value());
+    }
+
+    auto stat_result = sftp_session.try_stat(remote_file);
+    REQUIRE(stat_result.has_value());
+    CHECK(stat_result->size == content.size());
+
+    {
+        auto file = sftp_session.try_open(remote_file, sftp::OpenMode::read);
+        REQUIRE(file.has_value());
+        sftp::File::ReadAhead reader(*file, /*chunk=*/64 * 1024, /*depth=*/8);
+        std::string readback;
+        for (;;) {
+            auto chunk = reader.try_next();
+            REQUIRE(chunk.has_value());
+            if (chunk->empty()) break;
+            readback.append(chunk->as_string_view());
+        }
+        CHECK(readback == content);
+    }
+
+    CHECK(sftp_session.try_remove(remote_file).has_value());
+    std::filesystem::remove_all(tmp_dir);
+}
+
