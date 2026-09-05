@@ -94,6 +94,11 @@ public:
 
     /// Answers the first non-echo prompt with the password; the common "PAM password" case.
     static KeyboardInteractive with_password(SecureString password);
+#if SSHPP_WITH_CONSOLE
+    /// A Handler that prompts on /dev/tty, echoing prompts marked echo=true and
+    /// disabling terminal echo for the rest (passwords/PINs).
+    static Handler console_handler();
+#endif
 
     std::string_view name() const noexcept override { return "keyboard-interactive"; }
     Result<AuthStatus> attempt(detail::SessionCore&) const noexcept override;
@@ -112,12 +117,30 @@ public:
         return add(std::make_shared<A>(std::forward<Args>(args)...));
     }
 
+#if SSHPP_WITH_CONSOLE
+    /// Default chain: Agent -> PublicKeyAuto -> KeyboardInteractive(console) -> Password(console).
+    /// Note: `passphrase_cb` is consulted once, eagerly, to seed PublicKeyAuto's
+    /// single shared passphrase (PublicKeyAuto has no per-key callback of its
+    /// own) - it does not defer until Agent/no-passphrase-needed keys have
+    /// already been tried.
+    static Chain interactive_default(PassphraseCallback passphrase_cb, PasswordCallback password_cb);
+#endif
+
     std::string_view name() const noexcept override { return "chain"; }
     Result<AuthStatus> attempt(detail::SessionCore&) const noexcept override;
 
 private:
     std::vector<std::shared_ptr<Authenticator>> chain_;
 };
+
+#if SSHPP_WITH_CONSOLE
+/// Reads a password from /dev/tty with echo disabled.
+SSHPP_API Result<SecureString> console_password_prompt(std::string_view prompt = "Password: ");
+/// A PassphraseCallback that prompts on /dev/tty (echo disabled), showing the key path and attempt number.
+SSHPP_API PassphraseCallback console_passphrase_prompt();
+/// A PasswordCallback that prompts on /dev/tty (echo disabled).
+SSHPP_API PasswordCallback console_password_callback();
+#endif
 
 } // namespace auth
 } // namespace sshpp

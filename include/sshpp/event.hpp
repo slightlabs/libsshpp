@@ -24,6 +24,11 @@ public:
     Result<void> try_add_session(Session&);
     Result<void> try_remove_session(Session&);
 
+#if SSHPP_HAS_CONNECTOR
+    Result<void> try_add_connector(native_connector);
+    Result<void> try_remove_connector(native_connector);
+#endif
+
     /// SSH_OK / SSH_AGAIN(timeout) / SSH_ERROR.
     Result<void> try_poll(std::chrono::milliseconds timeout);
 

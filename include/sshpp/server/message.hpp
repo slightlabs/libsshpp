@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 //
-// Message-style server API. See docs/design/08-api-server.md.
-// Scope note: this implements the message-pull style only (§8.5); the
-// event-driven callback style (§8.6, SessionHandler/ChannelHandler) and the
-// ready-made SimpleAuthHandler / SftpSubsystemHandler are not implemented yet.
+// Message-style server API. See docs/design/08-api-server.md §8.5. For the
+// event-driven callback style (§8.6), see <sshpp/server/handlers.hpp>.
 #pragma once
 
 #include <sshpp/config.hpp>

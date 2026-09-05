@@ -19,6 +19,7 @@
 #include <sshpp/result.hpp>
 #include <sshpp/session.hpp>
 #include <sshpp/session_options.hpp>
+#include <sshpp/shell.hpp>
 #include <sshpp/types.hpp>
 
 #if SSHPP_WITH_SFTP
@@ -36,6 +37,9 @@
 
 #if SSHPP_WITH_SERVER
 #include <sshpp/server/bind.hpp>
+#include <sshpp/server/handlers.hpp>
 #include <sshpp/server/message.hpp>
 #include <sshpp/server/server_session.hpp>
+#include <sshpp/server/sftp_subsystem.hpp>
+#include <sshpp/server/test_server.hpp>
 #endif

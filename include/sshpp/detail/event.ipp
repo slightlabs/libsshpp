@@ -41,6 +41,22 @@ SSHPP_INLINE Result<void> Event::try_remove_session(Session& session) {
     return {};
 }
 
+#if SSHPP_HAS_CONNECTOR
+SSHPP_INLINE Result<void> Event::try_add_connector(native_connector connector) {
+    if (native_ == nullptr) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Event::try_add_connector"};
+    if (ssh_event_add_connector(native_, connector) != SSH_OK) {
+        return ErrorInfo{make_error_code(errc::unknown), "", "ssh_event_add_connector"};
+    }
+    return {};
+}
+
+SSHPP_INLINE Result<void> Event::try_remove_connector(native_connector connector) {
+    if (native_ == nullptr) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Event::try_remove_connector"};
+    ssh_event_remove_connector(native_, connector);
+    return {};
+}
+#endif
+
 SSHPP_INLINE Result<void> Event::try_poll(std::chrono::milliseconds timeout) {
     if (native_ == nullptr) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Event::try_poll"};
     int rc = ssh_event_dopoll(native_, static_cast<int>(timeout.count()));

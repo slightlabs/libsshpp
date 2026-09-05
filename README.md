@@ -3,25 +3,29 @@
 A modern **C++17** wrapper around [libssh](https://www.libssh.org/), packaged with **CMake** and
 **Conan 2**.
 
-> **Status: M0 through M3 implemented (with documented scope trims).** `Library`, error
-> handling, `Session`, `SessionOptions`, authenticators, `Key`/PKI, `KnownHosts`,
-> `HostKeyVerifier` policies, `Channel`, `Exec`, the SFTP module (`sftp::Sftp`/`File`/
-> `Directory`, transfer helpers with path-traversal hardening, pipelined
-> `File::ReadAhead`/`WriteBehind`), SCP (`scp::Reader`/`Writer` + `try_upload`/
-> `try_download`), TCP port forwarding (`open_direct`, `LocalForward`, `RemoteForward`),
-> and a message-style server module (`server::Bind`/`Session`/`Message`) are implemented
-> and tested against a real `sshd` (and, for the server module, against `libsshpp`'s own
-> client) — see [tests/](tests/), [examples/01_exec.cpp](examples/01_exec.cpp).
+> **Status: M0 through M3 implemented, plus most of the remaining design (with a few
+> documented scope trims).** `Library`, error handling, `Session`, `SessionOptions`,
+> authenticators, `Key`/PKI, `KnownHosts`, `HostKeyVerifier` policies, `Channel`, `Exec`,
+> `Shell` (incl. `try_interact()` and console prompt helpers under `LIBSSHPP_WITH_CONSOLE`),
+> the SFTP module (`sftp::Sftp`/`File`/`Directory`, transfer helpers with path-traversal
+> hardening, pipelined `File::ReadAhead`/`WriteBehind`), SCP (`scp::Reader`/`Writer` +
+> `try_upload`/`try_download`), TCP/UNIX-socket port forwarding (`open_direct`,
+> `LocalForward`, `RemoteForward`, `X11Forwarder`, `SocksProxy`, `Connector`/
+> `BidirectionalPump`), and both server styles - message-pull (`server::Bind`/`Session`/
+> `Message`) and event-driven callbacks (`SessionHandler`/`ChannelHandler`,
+> `SimpleAuthHandler`, `CommandHandler`, `SftpSubsystemHandler`, `server::TestServer`) -
+> are implemented and tested against a real `sshd` (and, for the server module, against
+> `libsshpp`'s own client) — see [tests/](tests/), [examples/01_exec.cpp](examples/01_exec.cpp).
 >
 > Relative to the full design, the following are **not implemented**: the forwarding
-> module serves one connection at a time per forwarder with a simple poll-based pump
-> rather than the design's `ssh_connector`/`Event`-based `Connector`, and has no X11
-> forwarding, `SocksProxy`, or UNIX-socket targets; the server module has only the
-> message-pull style (§8.5), not the event-driven callback style (§8.6) or the
-> ready-made `SimpleAuthHandler`/`SftpSubsystemHandler`; SFTP's `ReadAhead`/`WriteBehind`
-> aside, there is no `Shell::interact`, pcap module, or console/tty helpers.
-> The design documents in [`docs/design/`](docs/design/README.md)
-> remain the normative reference — code that contradicts them is a bug in one or the other.
+> module still serves one connection at a time per forwarder with a poll-based pump
+> (`BidirectionalPump` included) rather than driving everything through `ssh_connector`
+> via `Event`; the callback-style server has no keyboard-interactive auth or
+> tcpip-forward/direct-tcpip channel handling (the libssh version this targets has no
+> callback slots for them - use the message style for those) and no `Options::faults`
+> fault-injection in `TestServer`; there is no pcap module. The design documents in
+> [`docs/design/`](docs/design/README.md) remain the normative reference — code that
+> contradicts them is a bug in one or the other.
 
 ---
 
@@ -120,15 +124,16 @@ target_link_libraries(app PRIVATE libsshpp::libsshpp)
 | `LIBSSHPP_HEADER_ONLY` | `OFF` | Build as an `INTERFACE` library, per [09 §9.3](docs/design/09-build-and-packaging.md#93-header-only-mode) |
 | `LIBSSHPP_WITH_SFTP` | `ON` | SFTP module |
 | `LIBSSHPP_WITH_SCP` | `ON` | SCP module |
-| `LIBSSHPP_WITH_SERVER` | `ON` | Server module (message-style API only; see status note) |
-| `LIBSSHPP_WITH_FORWARDING` | `ON` | TCP port forwarding (`open_direct`, `LocalForward`, `RemoteForward`; no X11/SOCKS yet) |
-| `LIBSSHPP_WITH_CONSOLE` | `OFF` (not yet implemented) | tty helpers (`Shell::interact`, prompts) |
+| `LIBSSHPP_WITH_SERVER` | `ON` | Server module: message-style *and* event-driven callback style, `TestServer` |
+| `LIBSSHPP_WITH_FORWARDING` | `ON` | Port forwarding: `open_direct`, `LocalForward`, `RemoteForward`, `X11Forwarder`, `SocksProxy` |
+| `LIBSSHPP_WITH_CONSOLE` | `OFF` | tty helpers: `Shell::try_interact()`, `auth::console_*_prompt()`, `KeyboardInteractive::console_handler()`, `Chain::interactive_default()` |
 | `LIBSSHPP_BUILD_TESTS` | top-level only | Catch2 test suite |
 | `LIBSSHPP_SANITIZERS` | `""` | e.g. `address;undefined` |
 
 Full list in [09 §9.2](docs/design/09-build-and-packaging.md#92-top-level-cmakeliststxt-structure).
-Note: `LIBSSHPP_WITH_CONSOLE` currently defaults
-to `OFF` because tty helpers aren't implemented yet (see the status note above).
+Note: `LIBSSHPP_WITH_CONSOLE` defaults to `OFF` since a library embedded in a server has
+no business putting a terminal in raw mode or installing a `SIGWINCH` handler; opt in for
+CLI-style clients.
 
 ## Building from source (current state)
 

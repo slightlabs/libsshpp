@@ -23,7 +23,7 @@ option(LIBSSHPP_WITH_SFTP          "Enable the SFTP module"                     
 option(LIBSSHPP_WITH_SCP           "Enable the SCP module"                           ON)
 option(LIBSSHPP_WITH_SERVER        "Enable the server module"                        ON)
 option(LIBSSHPP_WITH_FORWARDING    "Enable port forwarding"                          ON)
-option(LIBSSHPP_WITH_CONSOLE       "Enable tty helpers (not yet implemented)"        OFF)
+option(LIBSSHPP_WITH_CONSOLE       "Enable tty helpers (Shell::try_interact, console auth prompts)" OFF)
 option(LIBSSHPP_WITH_PCAP          "Enable pcap capture"           OFF)
 option(LIBSSHPP_USE_SSH_CONNECTOR  "Use ssh_connector_* for pumps" ON)
 
@@ -84,6 +84,7 @@ set(LIBSSHPP_HEADERS
     include/sshpp/channel.hpp
     include/sshpp/event.hpp
     include/sshpp/exec.hpp
+    include/sshpp/shell.hpp
     include/sshpp/detail/native_fwd.hpp
     include/sshpp/detail/unique_handle.hpp
     include/sshpp/detail/session_core.hpp
@@ -102,7 +103,8 @@ set(LIBSSHPP_SOURCES
     src/session.cpp
     src/channel.cpp
     src/event.cpp
-    src/exec.cpp)
+    src/exec.cpp
+    src/shell.cpp)
 
 if(LIBSSHPP_WITH_SFTP)
     list(APPEND LIBSSHPP_HEADERS
@@ -132,11 +134,18 @@ if(LIBSSHPP_WITH_SERVER)
     list(APPEND LIBSSHPP_HEADERS
         include/sshpp/server/bind.hpp
         include/sshpp/server/server_session.hpp
-        include/sshpp/server/message.hpp)
+        include/sshpp/server/message.hpp
+        include/sshpp/server/handlers.hpp
+        include/sshpp/server/sftp_subsystem.hpp
+        include/sshpp/server/test_server.hpp
+        include/sshpp/detail/handler_bridge.hpp)
     list(APPEND LIBSSHPP_SOURCES
         src/server_bind.cpp
         src/server_session.cpp
-        src/server_message.cpp)
+        src/server_message.cpp
+        src/server_handlers.cpp
+        src/server_sftp_subsystem.cpp
+        src/server_test_server.cpp)
 endif()
 
 # --------------------------------------------------------------- the target --

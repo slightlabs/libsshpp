@@ -181,3 +181,54 @@ TEST_CASE("RemoteForward (-R) round trip against a real sshd", "[integration][fo
 
     fwd.stop();
 }
+
+TEST_CASE("SocksProxy (-D) tunnels a SOCKS5 CONNECT to a real destination", "[integration][forwarding][socks]") {
+    Session session = make_connected_session();
+    EchoServer echo;
+
+    SocksProxy::Options opts;
+    opts.listen = {"127.0.0.1", 0};
+    SocksProxy proxy(session, opts);
+    REQUIRE(proxy.try_start().has_value());
+    auto local = proxy.local_endpoint();
+    REQUIRE(local.port != 0);
+
+    int client = connect_to(local.port);
+    REQUIRE(client >= 0);
+
+    // Method negotiation: version 5, one method (no auth).
+    const unsigned char greeting[3] = {0x05, 0x01, 0x00};
+    REQUIRE(::send(client, greeting, sizeof(greeting), 0) == static_cast<ssize_t>(sizeof(greeting)));
+    unsigned char method_reply[2] = {};
+    REQUIRE(::recv(client, method_reply, sizeof(method_reply), 0) == 2);
+    REQUIRE(method_reply[0] == 0x05);
+    REQUIRE(method_reply[1] == 0x00);
+
+    // CONNECT request to the echo server, addressed by IPv4.
+    sockaddr_in echo_addr{};
+    echo_addr.sin_family = AF_INET;
+    echo_addr.sin_port = htons(echo.port());
+    ::inet_pton(AF_INET, "127.0.0.1", &echo_addr.sin_addr);
+    unsigned char request[10] = {0x05, 0x01, 0x00, 0x01};
+    std::memcpy(&request[4], &echo_addr.sin_addr, 4);
+    std::memcpy(&request[8], &echo_addr.sin_port, 2);
+    REQUIRE(::send(client, request, sizeof(request), 0) == static_cast<ssize_t>(sizeof(request)));
+
+    unsigned char reply[10] = {};
+    REQUIRE(::recv(client, reply, sizeof(reply), 0) == 10);
+    REQUIRE(reply[0] == 0x05);
+    REQUIRE(reply[1] == 0x00); // granted
+
+    const std::string msg = "hello-through-socks";
+    REQUIRE(::send(client, msg.data(), msg.size(), 0) == static_cast<ssize_t>(msg.size()));
+    char buf[128] = {};
+    ssize_t n = ::recv(client, buf, sizeof(buf) - 1, 0);
+    REQUIRE(n > 0);
+    CHECK(std::string(buf, static_cast<std::size_t>(n)) == msg);
+
+    ::close(client);
+    proxy.stop();
+    auto stats = proxy.stats();
+    CHECK(stats.connections == 1);
+}
+

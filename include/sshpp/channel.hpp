@@ -11,6 +11,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -45,6 +46,12 @@ public:
     native_channel native_handle() const noexcept { return native_; }
     static Channel from_native(native_channel, detail::SessionCorePtr, Ownership);
 
+    /// The owning Session's recursive mutex. For advanced multi-threaded use
+    /// only (e.g. a dedicated per-subsystem thread doing raw, synchronous
+    /// libssh calls that must not interleave with a concurrent Event/message
+    /// poll loop on the same underlying ssh_session - see SftpSubsystemHandler).
+    std::recursive_mutex& session_mutex() const noexcept { return core_->mutex(); }
+
     // ---- opening --------------------------------------------------------
     Result<void> try_open_session();
     bool is_open() const noexcept { return open_; }
@@ -64,8 +71,11 @@ public:
     Result<std::string> try_read_all(Stream = Stream::stdout_, std::size_t limit = 64u << 20);
 
     Result<std::size_t> try_write_some(ByteView data);
+    Result<std::size_t> try_write_some(ByteView data, Stream stream);
     Result<void>        try_write_all(ByteView data);
+    Result<void>        try_write_all(ByteView data, Stream stream);
     Result<void>        try_write_all(std::string_view data);
+    Result<void>        try_write_all(std::string_view data, Stream stream);
 
     Result<std::size_t> try_bytes_available(Stream = Stream::stdout_) const;
     Result<bool>        try_wait_readable(std::chrono::milliseconds, Stream = Stream::stdout_);
@@ -80,6 +90,11 @@ public:
     Result<ExitState> try_wait_exit(std::chrono::milliseconds timeout = std::chrono::milliseconds::max());
     ExitState         exit_state() const noexcept;
 
+#if SSHPP_WITH_SERVER
+    // ---- server-side replies (see docs/design/08) -------------------------------
+    Result<void> try_send_exit_status(int code);
+#endif
+
 #if SSHPP_WITH_FORWARDING
     // ---- forwarding factories (see docs/design/07) ---------------------------------
     static Result<Channel> open_forward(Session&, std::string_view remote_host, std::uint16_t remote_port,
@@ -93,6 +108,9 @@ private:
         : native_(n), core_(std::move(core)), owning_(owning) {}
 
     friend class Session;
+#if SSHPP_WITH_FORWARDING
+    friend class X11Forwarder;
+#endif
 
     native_channel        native_ = nullptr;
     detail::SessionCorePtr core_;

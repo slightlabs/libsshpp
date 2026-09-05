@@ -2,6 +2,13 @@
 // Generated from src/server_session.cpp; see docs/design/09 §9.3.
 #include <sshpp/config.hpp>
 // SPDX-License-Identifier: LGPL-2.1-or-later
+//
+// Session::try_set_handler/try_attach/try_poll (the callback-style entry
+// points) are defined in server_handlers.ipp, not here: they need
+// detail::HandlerBridge and SessionHandler complete, and server/handlers.hpp
+// includes server_session.hpp *before* those types exist, so a dependency in
+// the other direction would create an unresolvable header-only include cycle
+// (same pattern as Channel::open_forward in forwarding.ipp; see docs/design/09 §9.3).
 #include <sshpp/server/server_session.hpp>
 #include <sshpp/detail/invoke.hpp>
 
@@ -42,6 +49,7 @@ SSHPP_INLINE void Session::set_auth_methods(AuthMethodSet methods) {
 SSHPP_INLINE Result<void> Session::try_disconnect(std::string_view /*reason*/) {
     if (!core_) return ErrorInfo{make_error_code(errc::invalid_handle), "", "server::Session::try_disconnect"};
     ssh_disconnect(core_->raw());
+    notify_disconnect();
     return {};
 }
 
@@ -53,6 +61,11 @@ SSHPP_INLINE Result<std::string> Session::try_client_banner() const {
 
 SSHPP_INLINE Result<std::optional<Message>> Session::try_next_message(std::chrono::milliseconds timeout) {
     if (!core_) return ErrorInfo{make_error_code(errc::invalid_handle), "", "server::Session::try_next_message"};
+    if (bridge_) {
+        return ErrorInfo{make_error_code(errc::invalid_argument), "session already uses the callback style (try_set_handler)",
+                        "server::Session::try_next_message"};
+    }
+    used_message_style_ = true;
     if (timeout.count() >= 0) {
         pollfd pfd{static_cast<int>(ssh_get_fd(core_->raw())), POLLIN, 0};
         if (::poll(&pfd, 1, static_cast<int>(timeout.count())) <= 0) {

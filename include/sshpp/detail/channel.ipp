@@ -6,6 +6,9 @@
 #include <sshpp/detail/invoke.hpp>
 
 #include <libssh/libssh.h>
+#if SSHPP_WITH_SERVER
+#include <libssh/server.h>
+#endif
 
 #include <algorithm>
 #include <type_traits>
@@ -187,6 +190,16 @@ SSHPP_INLINE Result<std::size_t> Channel::try_write_some(ByteView data) {
     return static_cast<std::size_t>(rc);
 }
 
+SSHPP_INLINE Result<std::size_t> Channel::try_write_some(ByteView data, Stream stream) {
+    if (stream == Stream::stdout_) return try_write_some(data);
+    if (native_ == nullptr) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Channel::try_write_some"};
+    int rc = ssh_channel_write_stderr(native_, data.data(), static_cast<uint32_t>(data.size()));
+    if (rc < 0) {
+        return detail::make_error_info(core_->raw(), "ssh_channel_write_stderr", SSHPP_HERE, errc::channel_closed);
+    }
+    return static_cast<std::size_t>(rc);
+}
+
 SSHPP_INLINE Result<void> Channel::try_write_all(ByteView data) {
     std::size_t written = 0;
     while (written < data.size()) {
@@ -201,8 +214,26 @@ SSHPP_INLINE Result<void> Channel::try_write_all(ByteView data) {
     return {};
 }
 
+SSHPP_INLINE Result<void> Channel::try_write_all(ByteView data, Stream stream) {
+    std::size_t written = 0;
+    while (written < data.size()) {
+        ByteView remaining(data.data() + written, data.size() - written);
+        auto r = try_write_some(remaining, stream);
+        if (!r) return r.error();
+        if (*r == 0) {
+            return ErrorInfo{make_error_code(errc::channel_closed), "short write", "Channel::try_write_all"};
+        }
+        written += *r;
+    }
+    return {};
+}
+
 SSHPP_INLINE Result<void> Channel::try_write_all(std::string_view data) {
     return try_write_all(ByteView(data));
+}
+
+SSHPP_INLINE Result<void> Channel::try_write_all(std::string_view data, Stream stream) {
+    return try_write_all(ByteView(data), stream);
 }
 
 SSHPP_INLINE Result<std::size_t> Channel::try_bytes_available(Stream stream) const {
@@ -280,5 +311,15 @@ SSHPP_INLINE ExitState Channel::exit_state() const noexcept {
     return st;
 }
 
+#if SSHPP_WITH_SERVER
+SSHPP_INLINE Result<void> Channel::try_send_exit_status(int code) {
+    if (native_ == nullptr) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Channel::try_send_exit_status"};
+    if (ssh_channel_request_send_exit_status(native_, code) != SSH_OK) {
+        return detail::make_error_info(ssh_channel_get_session(native_), "ssh_channel_request_send_exit_status",
+                                       SSHPP_HERE, errc::channel_request_failed);
+    }
+    return {};
+}
+#endif
 
 } // namespace sshpp

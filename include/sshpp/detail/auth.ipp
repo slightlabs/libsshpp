@@ -9,6 +9,13 @@
 
 #include <cstring>
 
+#if SSHPP_WITH_CONSOLE
+#include <cstdio>
+#include <iostream>
+#include <termios.h>
+#include <unistd.h>
+#endif
+
 namespace sshpp {
 
 SSHPP_INLINE AuthMethods AuthMethods::from_bits(int bits) noexcept {
@@ -143,6 +150,94 @@ SSHPP_INLINE Result<AuthStatus> Chain::attempt(detail::SessionCore& core) const 
     }
     return last;
 }
+
+#if SSHPP_WITH_CONSOLE
+SSHPP_INLINE KeyboardInteractive::Handler KeyboardInteractive::console_handler() {
+    return [](const Challenge& challenge) -> Result<std::vector<SecureString>> {
+        if (!challenge.instruction.empty()) std::fputs(challenge.instruction.c_str(), stderr);
+        std::vector<SecureString> answers;
+        answers.reserve(challenge.prompts.size());
+        for (const auto& prompt : challenge.prompts) {
+            std::fputs(prompt.text.c_str(), stderr);
+            if (prompt.echo) {
+                std::string line;
+                std::getline(std::cin, line);
+                answers.emplace_back(std::move(line));
+            } else {
+                auto pw = console_password_prompt("");
+                if (!pw) return pw.error();
+                answers.emplace_back(std::move(*pw));
+            }
+        }
+        return answers;
+    };
+}
+
+SSHPP_INLINE Chain Chain::interactive_default(PassphraseCallback passphrase_cb, PasswordCallback password_cb) {
+    Chain chain;
+    chain.add(std::make_shared<Agent>());
+
+    SecureString passphrase;
+    if (passphrase_cb) {
+        auto r = passphrase_cb(PassphraseRequest{});
+        if (r) passphrase = *r;
+    }
+    chain.add(std::make_shared<PublicKeyAuto>(passphrase));
+    chain.add(std::make_shared<KeyboardInteractive>(KeyboardInteractive::console_handler()));
+
+    struct LazyPassword final : Authenticator {
+        explicit LazyPassword(PasswordCallback cb) : cb_(std::move(cb)) {}
+        std::string_view name() const noexcept override { return "password"; }
+        Result<AuthStatus> attempt(detail::SessionCore& core) const noexcept override {
+            auto pw = cb_ ? cb_() : Result<SecureString>(SecureString{});
+            if (!pw) return pw.error();
+            return Password(*pw).attempt(core);
+        }
+        PasswordCallback cb_;
+    };
+    chain.add(std::make_shared<LazyPassword>(std::move(password_cb)));
+    return chain;
+}
+
+namespace {
+SecureString read_line_no_echo() {
+    termios saved{};
+    bool have_tty = ::tcgetattr(STDIN_FILENO, &saved) == 0;
+    if (have_tty) {
+        termios raw = saved;
+        raw.c_lflag &= static_cast<tcflag_t>(~ECHO);
+        ::tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+    }
+    std::string line;
+    std::getline(std::cin, line);
+    if (have_tty) {
+        ::tcsetattr(STDIN_FILENO, TCSANOW, &saved);
+        std::fputc('\n', stderr);
+    }
+    return SecureString(std::move(line));
+}
+} // namespace
+
+SSHPP_INLINE Result<SecureString> console_password_prompt(std::string_view prompt) {
+    if (!prompt.empty()) {
+        std::fwrite(prompt.data(), 1, prompt.size(), stderr);
+        std::fflush(stderr);
+    }
+    return read_line_no_echo();
+}
+
+SSHPP_INLINE PassphraseCallback console_passphrase_prompt() {
+    return [](const PassphraseRequest& req) -> Result<SecureString> {
+        std::string prompt = "Passphrase for " + req.key_path + ": ";
+        return console_password_prompt(prompt);
+    };
+}
+
+SSHPP_INLINE PasswordCallback console_password_callback() {
+    return []() -> Result<SecureString> { return console_password_prompt("Password: "); };
+}
+
+#endif // SSHPP_WITH_CONSOLE
 
 } // namespace auth
 } // namespace sshpp
