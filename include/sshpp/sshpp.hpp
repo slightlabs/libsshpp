@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 //
-// Umbrella header for the parts of libsshpp implemented so far.
-// The server module is not yet implemented; see
-// docs/design/11-versioning-and-roadmap.md for the milestone plan.
+// Umbrella header for the parts of libsshpp implemented so far. See
+// docs/design/11-versioning-and-roadmap.md for the milestone plan and
+// README.md for what's scoped down relative to the design.
 #pragma once
 
 #include <sshpp/config.hpp>
@@ -32,4 +32,10 @@
 
 #if SSHPP_WITH_FORWARDING
 #include <sshpp/forwarding.hpp>
+#endif
+
+#if SSHPP_WITH_SERVER
+#include <sshpp/server/bind.hpp>
+#include <sshpp/server/message.hpp>
+#include <sshpp/server/server_session.hpp>
 #endif

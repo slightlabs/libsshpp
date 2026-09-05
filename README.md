@@ -3,19 +3,24 @@
 A modern **C++17** wrapper around [libssh](https://www.libssh.org/), packaged with **CMake** and
 **Conan 2**.
 
-> **Status: M0 + M1 + M2 + partial M3 implemented.** `Library`, error handling, `Session`,
-> `SessionOptions`, authenticators, `Key`/PKI, `KnownHosts`, `HostKeyVerifier` policies,
-> `Channel`, `Exec`, the SFTP module (`sftp::Sftp`/`File`/`Directory`, transfer
-> helpers with path-traversal hardening, pipelined `File::ReadAhead`/`WriteBehind`),
-> SCP (`scp::Reader`/`Writer` + `try_upload`/`try_download`), and TCP port forwarding
-> (`open_direct`, `LocalForward`, `RemoteForward`) are implemented and tested against
-> a real `sshd` — see [tests/](tests/), [examples/01_exec.cpp](examples/01_exec.cpp).
-> The forwarding module currently serves one connection at a time per forwarder with a
-> simple poll-based pump (not the design's `ssh_connector`/`Event`-based `Connector`);
-> X11 forwarding, `SocksProxy`, and UNIX-socket forward targets are also not implemented.
-> The server module (M3 in [11 — Roadmap](docs/design/11-versioning-and-roadmap.md))
-> is **not implemented yet**; its CMake option (`LIBSSHPP_WITH_SERVER`) defaults to
-> `OFF` until it lands. The design documents in [`docs/design/`](docs/design/README.md)
+> **Status: M0 through M3 implemented (with documented scope trims).** `Library`, error
+> handling, `Session`, `SessionOptions`, authenticators, `Key`/PKI, `KnownHosts`,
+> `HostKeyVerifier` policies, `Channel`, `Exec`, the SFTP module (`sftp::Sftp`/`File`/
+> `Directory`, transfer helpers with path-traversal hardening, pipelined
+> `File::ReadAhead`/`WriteBehind`), SCP (`scp::Reader`/`Writer` + `try_upload`/
+> `try_download`), TCP port forwarding (`open_direct`, `LocalForward`, `RemoteForward`),
+> and a message-style server module (`server::Bind`/`Session`/`Message`) are implemented
+> and tested against a real `sshd` (and, for the server module, against `libsshpp`'s own
+> client) — see [tests/](tests/), [examples/01_exec.cpp](examples/01_exec.cpp).
+>
+> Relative to the full design, the following are **not implemented**: the forwarding
+> module serves one connection at a time per forwarder with a simple poll-based pump
+> rather than the design's `ssh_connector`/`Event`-based `Connector`, and has no X11
+> forwarding, `SocksProxy`, or UNIX-socket targets; the server module has only the
+> message-pull style (§8.5), not the event-driven callback style (§8.6) or the
+> ready-made `SimpleAuthHandler`/`SftpSubsystemHandler`; SFTP's `ReadAhead`/`WriteBehind`
+> aside, there is no `Shell::interact`, pcap module, or console/tty helpers.
+> The design documents in [`docs/design/`](docs/design/README.md)
 > remain the normative reference — code that contradicts them is a bug in one or the other.
 
 ---
@@ -115,15 +120,15 @@ target_link_libraries(app PRIVATE libsshpp::libsshpp)
 | `LIBSSHPP_HEADER_ONLY` | `OFF` | Build as an `INTERFACE` library |
 | `LIBSSHPP_WITH_SFTP` | `ON` | SFTP module |
 | `LIBSSHPP_WITH_SCP` | `ON` | SCP module |
-| `LIBSSHPP_WITH_SERVER` | `OFF` (not yet implemented) | Server module |
+| `LIBSSHPP_WITH_SERVER` | `ON` | Server module (message-style API only; see status note) |
 | `LIBSSHPP_WITH_FORWARDING` | `ON` | TCP port forwarding (`open_direct`, `LocalForward`, `RemoteForward`; no X11/SOCKS yet) |
 | `LIBSSHPP_WITH_CONSOLE` | `OFF` (not yet implemented) | tty helpers (`Shell::interact`, prompts) |
 | `LIBSSHPP_BUILD_TESTS` | top-level only | Catch2 test suite |
 | `LIBSSHPP_SANITIZERS` | `""` | e.g. `address;undefined` |
 
 Full list in [09 §9.2](docs/design/09-build-and-packaging.md#92-top-level-cmakeliststxt-structure).
-Note: `LIBSSHPP_WITH_SERVER` and `_CONSOLE` currently default
-to `OFF` because those modules aren't implemented yet (see the status note above).
+Note: `LIBSSHPP_WITH_CONSOLE` currently defaults
+to `OFF` because tty helpers aren't implemented yet (see the status note above).
 
 ## Building from source (current state)
 
