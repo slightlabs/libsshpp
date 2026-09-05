@@ -1,0 +1,62 @@
+site_name: libsshpp
+site_description: A modern C++17 wrapper around libssh, packaged with CMake and Conan 2.
+site_url: https://slightlabs.github.io/libsshpp/
+repo_url: https://github.com/slightlabs/libsshpp
+repo_name: slightlabs/libsshpp
+edit_uri: edit/main/docs/
+
+exclude_docs: |
+  Doxyfile
+  requirements.txt
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Design:
+      - Overview: design/README.md
+      - "01. Goals and scope": design/01-goals-and-scope.md
+      - "02. Architecture": design/02-architecture.md
+      - "03. Error handling": design/03-error-handling.md
+      - "04. Core API": design/04-api-core.md
+      - "05. Channels": design/05-api-channels.md
+      - "06. SFTP and SCP": design/06-api-sftp-scp.md
+      - "07. Forwarding": design/07-api-forwarding.md
+      - "08. Server": design/08-api-server.md
+      - "09. Build and packaging": design/09-build-and-packaging.md
+      - "10. Testing and CI": design/10-testing-and-ci.md
+      - "11. Versioning and roadmap": design/11-versioning-and-roadmap.md
+  - API Reference: api-reference.md
+  - Contributing: contributing.md

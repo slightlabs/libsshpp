@@ -90,4 +90,14 @@ export SSHPP_TEST_KNOWN_HOSTS="$WORKDIR/known_hosts"
 # Line-buffer stdout/stderr so that if ctest ever has to kill this on a TIMEOUT, whatever
 # ran before the hang is still visible in the captured output instead of sitting lost in a
 # libc stdio block buffer (observed: CI timeouts here previously showed zero output at all).
-stdbuf -oL -eL "$TEST_BIN"
+#
+# stdbuf works by LD_PRELOAD-ing libstdbuf.so into the child, which breaks ASan/UBSan
+# builds ("ASan runtime does not come first in initial library list") since the sanitizer
+# runtime must be first in the preload order. Skip stdbuf for sanitizer-instrumented
+# binaries; they flush enough on their own (and abort loudly) that buffering is a
+# non-issue there.
+if ldd "$TEST_BIN" 2>/dev/null | grep -qE 'libasan|libubsan|libtsan|libmsan'; then
+    exec "$TEST_BIN"
+else
+    exec stdbuf -oL -eL "$TEST_BIN"
+fi

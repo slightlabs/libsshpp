@@ -54,6 +54,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install MkDocs Material
+        run: pip install -r docs/requirements.txt
+
+      - name: Build site
+        # Not --strict: docs/api-reference.md links to api/index.html, which is
+        # generated separately by Doxygen into site/api/ below and doesn't exist
+        # as a doc file MkDocs can validate.
+        run: mkdocs build -d site
+
       - name: Install Doxygen
         run: |
           sudo apt-get update
@@ -62,12 +76,14 @@ jobs:
       - name: Generate API docs
         env:
           LIBSSHPP_VERSION: ${{ github.ref_name }}
-        run: doxygen docs/Doxyfile
+        run: |
+          mkdir -p site/api
+          doxygen docs/Doxyfile
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/_site
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4
 
