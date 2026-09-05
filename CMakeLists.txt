@@ -166,10 +166,8 @@ else()
         EXPORT_MACRO_NAME SSHPP_API
         NO_EXPORT_MACRO_NAME SSHPP_NO_EXPORT
         EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/include/sshpp/export.hpp)
-    if(NOT LIBSSHPP_WARNINGS_AS_ERRORS)
-        include(CompilerWarnings)
-        libsshpp_set_warnings(libsshpp)
-    endif()
+    include(CompilerWarnings)
+    libsshpp_set_warnings(libsshpp)
     include(Sanitizers)
     libsshpp_enable_sanitizers(libsshpp)
 endif()
@@ -217,6 +215,9 @@ if(LIBSSHPP_INSTALL AND NOT LIBSSHPP_HEADER_ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libsshppConfig.cmake
                   ${CMAKE_CURRENT_BINARY_DIR}/libsshppConfigVersion.cmake
             DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libsshpp)
+
+    install(FILES LICENSE THIRD_PARTY_NOTICES.md
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/licenses/libsshpp)
 endif()
 
 if(LIBSSHPP_BUILD_EXAMPLES)

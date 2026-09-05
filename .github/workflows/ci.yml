@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Ubuntu-only for now; this is what has actually been verified to build and
+# pass its test suite. Expanding to the macOS/Windows tiers from
+# docs/design/01 §1.6 / docs/design/10 §10.x is tracked future work.
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssh-dev catch2 openssh-server
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DLIBSSHPP_BUILD_TESTS=ON
+          -DLIBSSHPP_SYSTEM_TESTS=ON
+          -DLIBSSHPP_BUILD_EXAMPLES=ON
+          -DLIBSSHPP_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sanitizer: ["address;undefined", "thread"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssh-dev catch2 openssh-server
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DLIBSSHPP_BUILD_TESTS=ON
+          -DLIBSSHPP_SYSTEM_TESTS=ON
+          -DLIBSSHPP_SANITIZERS="${{ matrix.sanitizer }}"
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  minimal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssh-dev
+
+      - name: Configure (all optional modules off)
+        run: >
+          cmake -S . -B build
+          -DLIBSSHPP_WITH_SFTP=OFF
+          -DLIBSSHPP_WITH_SCP=OFF
+          -DLIBSSHPP_WITH_SERVER=OFF
+          -DLIBSSHPP_WITH_FORWARDING=OFF
+          -DLIBSSHPP_BUILD_TESTS=OFF
+          -DLIBSSHPP_BUILD_EXAMPLES=OFF
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+  # NOTE: no header-only job. LIBSSHPP_HEADER_ONLY=ON is scaffolded in CMake
+  # (see docs/design/09 §9.3) but not yet functional: export.hpp generation
+  # and the .ipp indirection it depends on aren't implemented, so a
+  # header-only consumer currently fails to compile/link. Tracked as a gap
+  # in README.md; add this job back once that's fixed.

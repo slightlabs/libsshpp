@@ -117,7 +117,7 @@ target_link_libraries(app PRIVATE libsshpp::libsshpp)
 
 | Option | Default | Effect |
 |---|---|---|
-| `LIBSSHPP_HEADER_ONLY` | `OFF` | Build as an `INTERFACE` library |
+| `LIBSSHPP_HEADER_ONLY` | `OFF` | Build as an `INTERFACE` library (**not yet functional** — scaffolded per [09 §9.3](docs/design/09-build-and-packaging.md#93-header-only-mode), but the `.ipp` indirection isn't implemented, so a header-only consumer currently fails to link) |
 | `LIBSSHPP_WITH_SFTP` | `ON` | SFTP module |
 | `LIBSSHPP_WITH_SCP` | `ON` | SCP module |
 | `LIBSSHPP_WITH_SERVER` | `ON` | Server module (message-style API only; see status note) |
@@ -152,7 +152,8 @@ verify host key → authenticate → exec end-to-end; see
 
 ## Licensing
 
-`libsshpp` is **LGPL-2.1-or-later**, matching libssh.
+`libsshpp` is **LGPL-2.1-or-later**, matching libssh (see [LICENSE](LICENSE) and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)).
 
 Linking `libsshpp` **statically** (or using header-only mode) into a proprietary application
 propagates the LGPL's relinking obligations. The Conan recipe therefore defaults to
@@ -171,7 +172,7 @@ When building remote commands from untrusted input, use the `argv` overload of `
 `sshpp::shell_quote`) — the `std::string_view` overload passes the command to the remote shell
 verbatim.
 
-Report vulnerabilities privately per `SECURITY.md` (to be added with M0).
+Report vulnerabilities privately per [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
