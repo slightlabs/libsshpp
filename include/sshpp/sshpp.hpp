@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 //
-// Umbrella header for the parts of libsshpp implemented so far (M0 + M1: core client).
-// SFTP, SCP, forwarding and the server module are not yet implemented; see
+// Umbrella header for the parts of libsshpp implemented so far.
+// The server module is not yet implemented; see
 // docs/design/11-versioning-and-roadmap.md for the milestone plan.
 #pragma once
 
@@ -28,4 +28,8 @@
 
 #if SSHPP_WITH_SCP
 #include <sshpp/scp/scp.hpp>
+#endif
+
+#if SSHPP_WITH_FORWARDING
+#include <sshpp/forwarding.hpp>
 #endif

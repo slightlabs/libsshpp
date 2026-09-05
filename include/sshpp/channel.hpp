@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
 #include <sshpp/detail/native_fwd.hpp>
 #include <sshpp/detail/session_core.hpp>
 #include <sshpp/export.hpp>
@@ -9,6 +10,7 @@
 #include <sshpp/types.hpp>
 
 #include <chrono>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -77,6 +79,14 @@ public:
     // ---- exit status -----------------------------------------------------------
     Result<ExitState> try_wait_exit(std::chrono::milliseconds timeout = std::chrono::milliseconds::max());
     ExitState         exit_state() const noexcept;
+
+#if SSHPP_WITH_FORWARDING
+    // ---- forwarding factories (see docs/design/07) ---------------------------------
+    static Result<Channel> open_forward(Session&, std::string_view remote_host, std::uint16_t remote_port,
+                                        std::string_view origin_host, std::uint16_t origin_port);
+    static Result<Channel> open_forward_unix(Session&, std::string_view remote_socket,
+                                             std::string_view origin_host, std::uint16_t origin_port);
+#endif
 
 private:
     Channel(native_channel n, detail::SessionCorePtr core, bool owning)

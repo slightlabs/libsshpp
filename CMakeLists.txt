@@ -19,13 +19,13 @@ endif()
 
 # ---------------------------------------------------------------- options ----
 option(LIBSSHPP_HEADER_ONLY        "Build as a header-only INTERFACE library" OFF)
-# server and forwarding modules are not implemented yet (see
-# docs/design/11-versioning-and-roadmap.md, M3); the options exist so client
-# code guarded by them compiles cleanly against a future release.
+# The server module is not implemented yet (see
+# docs/design/11-versioning-and-roadmap.md, M3); the option exists so client
+# code guarded by it compiles cleanly against a future release.
 option(LIBSSHPP_WITH_SFTP          "Enable the SFTP module"                          ON)
 option(LIBSSHPP_WITH_SCP           "Enable the SCP module"                           ON)
 option(LIBSSHPP_WITH_SERVER        "Enable the server module (not yet implemented)"  OFF)
-option(LIBSSHPP_WITH_FORWARDING    "Enable port forwarding (not yet implemented)"    OFF)
+option(LIBSSHPP_WITH_FORWARDING    "Enable port forwarding"                          ON)
 option(LIBSSHPP_WITH_CONSOLE       "Enable tty helpers (not yet implemented)"        OFF)
 option(LIBSSHPP_WITH_PCAP          "Enable pcap capture"           OFF)
 option(LIBSSHPP_USE_SSH_CONNECTOR  "Use ssh_connector_* for pumps" ON)
@@ -124,6 +124,11 @@ endif()
 if(LIBSSHPP_WITH_SCP)
     list(APPEND LIBSSHPP_HEADERS include/sshpp/scp/scp.hpp)
     list(APPEND LIBSSHPP_SOURCES src/scp.cpp)
+endif()
+
+if(LIBSSHPP_WITH_FORWARDING)
+    list(APPEND LIBSSHPP_HEADERS include/sshpp/forwarding.hpp)
+    list(APPEND LIBSSHPP_SOURCES src/forwarding.cpp)
 endif()
 
 # --------------------------------------------------------------- the target --

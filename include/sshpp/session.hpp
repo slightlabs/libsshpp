@@ -26,6 +26,11 @@ namespace sftp { class Sftp; }
 #if SSHPP_WITH_SCP
 namespace scp { class Reader; class Writer; enum class Mode; }
 #endif
+#if SSHPP_WITH_FORWARDING
+class RemoteForwardListener;
+class LocalForward;
+class RemoteForward;
+#endif
 
 struct NegotiatedAlgorithms {
     std::string kex, host_key, cipher_in, cipher_out, hmac_in, hmac_out;
@@ -98,12 +103,18 @@ public:
 
 private:
     friend class HostKeyVerifier;
+    friend class Channel;
 #if SSHPP_WITH_SFTP
     friend class sftp::Sftp;
 #endif
 #if SSHPP_WITH_SCP
     friend class scp::Reader;
     friend class scp::Writer;
+#endif
+#if SSHPP_WITH_FORWARDING
+    friend class RemoteForwardListener;
+    friend class LocalForward;
+    friend class RemoteForward;
 #endif
 
     detail::SessionCorePtr core_;

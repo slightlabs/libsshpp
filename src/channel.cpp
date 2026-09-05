@@ -7,6 +7,10 @@
 #include <algorithm>
 #include <type_traits>
 
+#if SSHPP_WITH_FORWARDING
+#include <sshpp/session.hpp>
+#endif
+
 namespace sshpp {
 
 namespace {
@@ -276,5 +280,42 @@ ExitState Channel::exit_state() const noexcept {
     }
     return st;
 }
+
+#if SSHPP_WITH_FORWARDING
+Result<Channel> Channel::open_forward(Session& session, std::string_view remote_host,
+                                      std::uint16_t remote_port, std::string_view origin_host,
+                                      std::uint16_t origin_port) {
+    ssh_channel raw = ssh_channel_new(session.native_handle());
+    if (raw == nullptr) {
+        return detail::make_error_info(session.native_handle(), "ssh_channel_new", SSHPP_HERE, errc::channel_open_failed);
+    }
+    std::string remote(remote_host), origin(origin_host);
+    int rc = ssh_channel_open_forward(raw, remote.c_str(), remote_port, origin.c_str(), origin_port);
+    if (rc != SSH_OK) {
+        auto info = detail::make_error_info(session.native_handle(), "ssh_channel_open_forward", SSHPP_HERE,
+                                            errc::forwarding_failed);
+        ssh_channel_free(raw);
+        return info;
+    }
+    return Channel::from_native(raw, session.core_, Ownership::owning);
+}
+
+Result<Channel> Channel::open_forward_unix(Session& session, std::string_view remote_socket,
+                                           std::string_view origin_host, std::uint16_t origin_port) {
+    ssh_channel raw = ssh_channel_new(session.native_handle());
+    if (raw == nullptr) {
+        return detail::make_error_info(session.native_handle(), "ssh_channel_new", SSHPP_HERE, errc::channel_open_failed);
+    }
+    std::string remote(remote_socket), origin(origin_host);
+    int rc = ssh_channel_open_forward_unix(raw, remote.c_str(), origin.c_str(), origin_port);
+    if (rc != SSH_OK) {
+        auto info = detail::make_error_info(session.native_handle(), "ssh_channel_open_forward_unix", SSHPP_HERE,
+                                            errc::forwarding_failed);
+        ssh_channel_free(raw);
+        return info;
+    }
+    return Channel::from_native(raw, session.core_, Ownership::owning);
+}
+#endif
 
 } // namespace sshpp
