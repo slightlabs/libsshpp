@@ -242,7 +242,14 @@ SSHPP_INLINE Result<void> File::WriteBehind::try_write(ByteView data) {
     }
     return {};
 #else
-    return file_->try_write_all(data);
+    std::size_t offset = 0;
+    while (offset < data.size()) {
+        std::size_t n = std::min(chunk_, data.size() - offset);
+        auto r = file_->try_write_all(ByteView(data.data() + offset, n));
+        if (!r) return r.error();
+        offset += n;
+    }
+    return {};
 #endif
 }
 
