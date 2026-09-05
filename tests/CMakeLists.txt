@@ -7,11 +7,17 @@ add_executable(sshpp_unit_tests
     unit/session_options_test.cpp
     unit/exec_test.cpp
     unit/key_test.cpp)
+if(LIBSSHPP_WITH_SFTP)
+    target_sources(sshpp_unit_tests PRIVATE unit/sftp_attributes_test.cpp)
+endif()
 target_link_libraries(sshpp_unit_tests PRIVATE libsshpp::libsshpp Catch2::Catch2WithMain)
 catch_discover_tests(sshpp_unit_tests)
 
 if(LIBSSHPP_SYSTEM_TESTS)
     add_executable(sshpp_integration_test integration/exec_integration_test.cpp)
+    if(LIBSSHPP_WITH_SFTP)
+        target_sources(sshpp_integration_test PRIVATE integration/sftp_integration_test.cpp)
+    endif()
     target_link_libraries(sshpp_integration_test PRIVATE libsshpp::libsshpp Catch2::Catch2WithMain)
 
     find_program(BASH_EXECUTABLE bash REQUIRED)

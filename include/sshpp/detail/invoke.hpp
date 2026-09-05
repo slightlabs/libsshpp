@@ -17,4 +17,8 @@ ErrorInfo make_error_info(native_session session, const char* operation, SourceL
 /// Maps a raw SSH_AUTH_* result to sshpp::errc for error paths (success/partial are not errors).
 errc errc_from_auth_result(int auth_result) noexcept;
 
+/// Snapshots sftp_get_error()/ssh_get_error() for an SFTP failure into an ErrorInfo.
+ErrorInfo make_sftp_error_info(native_sftp sftp, native_session session, const char* operation,
+                               SourceLocation where);
+
 } // namespace sshpp::detail

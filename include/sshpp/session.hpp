@@ -4,6 +4,7 @@
 #include <sshpp/auth.hpp>
 #include <sshpp/auth_types.hpp>
 #include <sshpp/channel.hpp>
+#include <sshpp/config.hpp>
 #include <sshpp/detail/native_fwd.hpp>
 #include <sshpp/detail/session_core.hpp>
 #include <sshpp/export.hpp>
@@ -18,6 +19,10 @@
 #include <string>
 
 namespace sshpp {
+
+#if SSHPP_WITH_SFTP
+namespace sftp { class Sftp; }
+#endif
 
 struct NegotiatedAlgorithms {
     std::string kex, host_key, cipher_in, cipher_out, hmac_in, hmac_out;
@@ -77,12 +82,18 @@ public:
     // ---- subsystem factories ---------------------------------------------------
     Result<Channel> try_open_channel();
     Channel         open_channel();
+#if SSHPP_WITH_SFTP
+    Result<sftp::Sftp> try_open_sftp();
+#endif
 
     // ---- diagnostics ------------------------------------------------------------
     void set_log_level(LogLevel);
 
 private:
     friend class HostKeyVerifier;
+#if SSHPP_WITH_SFTP
+    friend class sftp::Sftp;
+#endif
 
     detail::SessionCorePtr core_;
     SessionOptions          options_;

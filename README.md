@@ -3,15 +3,16 @@
 A modern **C++17** wrapper around [libssh](https://www.libssh.org/), packaged with **CMake** and
 **Conan 2**.
 
-> **Status: M0 + M1 implemented (client core).** `Library`, error handling, `Session`,
+> **Status: M0 + M1 + M2 (partial) implemented.** `Library`, error handling, `Session`,
 > `SessionOptions`, authenticators, `Key`/PKI, `KnownHosts`, `HostKeyVerifier` policies,
-> `Channel` and `Exec` are implemented and tested against a real `sshd` — see
-> [tests/](tests/) and [examples/01_exec.cpp](examples/01_exec.cpp).
-> SFTP, SCP, port forwarding, X11 and the server module (M2/M3 in
-> [11 — Roadmap](docs/design/11-versioning-and-roadmap.md)) are **not implemented yet**;
-> their CMake options (`LIBSSHPP_WITH_SFTP` etc.) default to `OFF` until they land.
-> The design documents in [`docs/design/`](docs/design/README.md) remain the normative
-> reference — code that contradicts them is a bug in one or the other.
+> `Channel`, `Exec`, and the SFTP module (`sftp::Sftp`/`File`/`Directory`, transfer
+> helpers with path-traversal hardening) are implemented and tested against a real
+> `sshd` — see [tests/](tests/), [examples/01_exec.cpp](examples/01_exec.cpp).
+> SFTP's pipelined `ReadAhead`/`WriteBehind` I/O, SCP, port forwarding, X11 and the
+> server module (M3 in [11 — Roadmap](docs/design/11-versioning-and-roadmap.md)) are
+> **not implemented yet**; their CMake options (`LIBSSHPP_WITH_SCP` etc.) default to
+> `OFF` until they land. The design documents in [`docs/design/`](docs/design/README.md)
+> remain the normative reference — code that contradicts them is a bug in one or the other.
 
 ---
 
@@ -109,15 +110,15 @@ target_link_libraries(app PRIVATE libsshpp::libsshpp)
 |---|---|---|
 | `LIBSSHPP_HEADER_ONLY` | `OFF` | Build as an `INTERFACE` library |
 | `LIBSSHPP_WITH_SFTP` | `ON` | SFTP module |
-| `LIBSSHPP_WITH_SCP` | `ON` | SCP module |
-| `LIBSSHPP_WITH_SERVER` | `ON` | Server module |
-| `LIBSSHPP_WITH_FORWARDING` | `ON` | Port forwarding, SOCKS, X11 |
-| `LIBSSHPP_WITH_CONSOLE` | `ON` | tty helpers (`Shell::interact`, prompts) |
+| `LIBSSHPP_WITH_SCP` | `OFF` (not yet implemented) | SCP module |
+| `LIBSSHPP_WITH_SERVER` | `OFF` (not yet implemented) | Server module |
+| `LIBSSHPP_WITH_FORWARDING` | `OFF` (not yet implemented) | Port forwarding, SOCKS, X11 |
+| `LIBSSHPP_WITH_CONSOLE` | `OFF` (not yet implemented) | tty helpers (`Shell::interact`, prompts) |
 | `LIBSSHPP_BUILD_TESTS` | top-level only | Catch2 test suite |
 | `LIBSSHPP_SANITIZERS` | `""` | e.g. `address;undefined` |
 
 Full list in [09 §9.2](docs/design/09-build-and-packaging.md#92-top-level-cmakeliststxt-structure).
-Note: `LIBSSHPP_WITH_SFTP`, `_SCP`, `_SERVER`, `_FORWARDING` and `_CONSOLE` currently default
+Note: `LIBSSHPP_WITH_SCP`, `_SERVER`, `_FORWARDING` and `_CONSOLE` currently default
 to `OFF` because those modules aren't implemented yet (see the status note above).
 
 ## Building from source (current state)

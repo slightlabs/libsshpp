@@ -19,10 +19,10 @@ endif()
 
 # ---------------------------------------------------------------- options ----
 option(LIBSSHPP_HEADER_ONLY        "Build as a header-only INTERFACE library" OFF)
-# SFTP, SCP, server and forwarding modules are not implemented yet (see
-# docs/design/11-versioning-and-roadmap.md, M2/M3); the options exist so client
+# SCP, server and forwarding modules are not implemented yet (see
+# docs/design/11-versioning-and-roadmap.md, M3); the options exist so client
 # code guarded by them compiles cleanly against a future release.
-option(LIBSSHPP_WITH_SFTP          "Enable the SFTP module (not yet implemented)"    OFF)
+option(LIBSSHPP_WITH_SFTP          "Enable the SFTP module"                          ON)
 option(LIBSSHPP_WITH_SCP           "Enable the SCP module (not yet implemented)"     OFF)
 option(LIBSSHPP_WITH_SERVER        "Enable the server module (not yet implemented)"  OFF)
 option(LIBSSHPP_WITH_FORWARDING    "Enable port forwarding (not yet implemented)"    OFF)
@@ -56,6 +56,16 @@ if(LIBSSHPP_HEADER_ONLY)
 else()
     set(LIBSSHPP_NEEDS_LIBSSH_DOWNSTREAM FALSE)
 endif()
+
+# config.hpp.in's #cmakedefine01 directives reference SSHPP_* variable names,
+# distinct from the LIBSSHPP_* cache options users set on the command line.
+set(SSHPP_HEADER_ONLY     ${LIBSSHPP_HEADER_ONLY})
+set(SSHPP_WITH_SFTP       ${LIBSSHPP_WITH_SFTP})
+set(SSHPP_WITH_SCP        ${LIBSSHPP_WITH_SCP})
+set(SSHPP_WITH_SERVER     ${LIBSSHPP_WITH_SERVER})
+set(SSHPP_WITH_FORWARDING ${LIBSSHPP_WITH_FORWARDING})
+set(SSHPP_WITH_CONSOLE    ${LIBSSHPP_WITH_CONSOLE})
+set(SSHPP_WITH_PCAP       ${LIBSSHPP_WITH_PCAP})
 
 configure_file(cmake/config.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/include/sshpp/config.hpp @ONLY)
 
@@ -96,6 +106,20 @@ set(LIBSSHPP_SOURCES
     src/channel.cpp
     src/event.cpp
     src/exec.cpp)
+
+if(LIBSSHPP_WITH_SFTP)
+    list(APPEND LIBSSHPP_HEADERS
+        include/sshpp/sftp/attributes.hpp
+        include/sshpp/sftp/file.hpp
+        include/sshpp/sftp/directory.hpp
+        include/sshpp/sftp/sftp.hpp
+        include/sshpp/sftp/algorithms.hpp)
+    list(APPEND LIBSSHPP_SOURCES
+        src/sftp.cpp
+        src/file.cpp
+        src/directory.cpp
+        src/algorithms.cpp)
+endif()
 
 # --------------------------------------------------------------- the target --
 if(LIBSSHPP_HEADER_ONLY)

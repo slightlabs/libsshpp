@@ -5,6 +5,8 @@
 // docs/design/11-versioning-and-roadmap.md for the milestone plan.
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/auth.hpp>
 #include <sshpp/channel.hpp>
 #include <sshpp/error.hpp>
@@ -18,3 +20,8 @@
 #include <sshpp/session.hpp>
 #include <sshpp/session_options.hpp>
 #include <sshpp/types.hpp>
+
+#if SSHPP_WITH_SFTP
+#include <sshpp/sftp/algorithms.hpp>
+#include <sshpp/sftp/sftp.hpp>
+#endif

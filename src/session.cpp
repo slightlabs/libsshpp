@@ -6,6 +6,10 @@
 
 #include <type_traits>
 
+#if SSHPP_WITH_SFTP
+#include <sshpp/sftp/sftp.hpp>
+#endif
+
 namespace sshpp {
 
 namespace {
@@ -340,6 +344,16 @@ Result<Channel> Session::try_open_channel() {
 }
 
 Channel Session::open_channel() { return try_open_channel().value(); }
+
+#if SSHPP_WITH_SFTP
+Result<sftp::Sftp> Session::try_open_sftp() {
+    if (!core_) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Session::try_open_sftp"};
+    sftp::Sftp s(*this);
+    auto r = s.try_init();
+    if (!r) return r.error();
+    return s;
+}
+#endif
 
 void Session::set_log_level(LogLevel level) {
     if (!core_) return;

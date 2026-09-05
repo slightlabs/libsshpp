@@ -2,11 +2,13 @@
 #include <sshpp/detail/invoke.hpp>
 
 #include <libssh/libssh.h>
+#include <libssh/sftp.h>
 
 namespace sshpp::detail {
 
 namespace {
 static_assert(std::is_same_v<native_session, ssh_session>, "libssh changed ssh_session's definition");
+static_assert(std::is_same_v<native_sftp, sftp_session>, "libssh changed sftp_session's definition");
 } // namespace
 
 ErrorInfo make_error_info(native_session session, const char* operation, SourceLocation where,
@@ -39,6 +41,19 @@ errc errc_from_auth_result(int auth_result) noexcept {
         case SSH_AUTH_ERROR: return errc::fatal;
         default: return errc::auth_denied;
     }
+}
+
+ErrorInfo make_sftp_error_info(native_sftp sftp, native_session session, const char* operation,
+                               SourceLocation where) {
+    ErrorInfo info;
+    info.operation = operation;
+    info.where = where;
+    int status = sftp != nullptr ? sftp_get_error(sftp) : SSH_FX_FAILURE;
+    info.code = make_error_code(static_cast<sftp_errc>(status));
+    if (session != nullptr) {
+        info.message = ssh_get_error(session);
+    }
+    return info;
 }
 
 } // namespace sshpp::detail
