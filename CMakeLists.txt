@@ -158,7 +158,10 @@ target_include_directories(libsshpp ${_scope}
 
 if(LIBSSHPP_HEADER_ONLY)
     target_link_libraries(libsshpp INTERFACE libssh::libssh)
-    target_compile_definitions(libsshpp INTERFACE SSHPP_HEADER_ONLY=1)
+    # generate_export_header() doesn't support INTERFACE libraries; header-only
+    # has no shared-library boundary, so SSHPP_API/SSHPP_NO_EXPORT are just empty.
+    configure_file(cmake/export-header-only.hpp.in
+        ${CMAKE_CURRENT_BINARY_DIR}/include/sshpp/export.hpp COPYONLY)
 else()
     target_link_libraries(libsshpp PRIVATE libssh::libssh)
     generate_export_header(libsshpp

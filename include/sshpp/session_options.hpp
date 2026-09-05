@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/export.hpp>
 #include <sshpp/library.hpp>
 #include <sshpp/result.hpp>
@@ -99,3 +101,7 @@ private:
 inline SessionOptions::Builder SessionOptions::builder() { return Builder{}; }
 
 } // namespace sshpp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/session_options.ipp>
+#endif

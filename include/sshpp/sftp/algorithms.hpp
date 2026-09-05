@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/export.hpp>
 #include <sshpp/result.hpp>
 #include <sshpp/sftp/sftp.hpp>
@@ -50,3 +52,7 @@ SSHPP_API Result<TreeStats> try_download_tree(Sftp&, const RemotePath& remote,
                                               TransferOptions = {});
 
 } // namespace sshpp::sftp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/algorithms.ipp>
+#endif

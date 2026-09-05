@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/detail/native_fwd.hpp>
 #include <sshpp/detail/session_core.hpp>
 #include <sshpp/export.hpp>
@@ -101,3 +103,7 @@ private:
 };
 
 } // namespace sshpp::sftp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/directory.ipp>
+#endif

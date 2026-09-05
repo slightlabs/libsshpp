@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/auth_types.hpp>
 #include <sshpp/detail/session_core.hpp>
 #include <sshpp/export.hpp>
@@ -119,3 +121,7 @@ private:
 
 } // namespace auth
 } // namespace sshpp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/auth.ipp>
+#endif

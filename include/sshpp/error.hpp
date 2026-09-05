@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/export.hpp>
 
 #include <string>
@@ -155,3 +157,7 @@ class SSHPP_API UsageError   : public Error { using Error::Error; };
 [[noreturn]] SSHPP_API void throw_error(ErrorInfo info);
 
 } // namespace sshpp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/error.ipp>
+#endif

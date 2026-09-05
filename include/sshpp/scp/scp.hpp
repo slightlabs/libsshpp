@@ -5,6 +5,8 @@
 // servers/appliances that only speak SCP. See docs/design/06 §6.7.
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/detail/native_fwd.hpp>
 #include <sshpp/detail/session_core.hpp>
 #include <sshpp/export.hpp>
@@ -101,3 +103,7 @@ SSHPP_API Result<std::uint64_t> try_upload(Session&, const std::filesystem::path
                                            const RemotePath&, ProgressCallback = {});
 
 } // namespace sshpp::scp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/scp.ipp>
+#endif

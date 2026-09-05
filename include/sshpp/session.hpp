@@ -123,3 +123,7 @@ private:
 };
 
 } // namespace sshpp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/session.ipp>
+#endif

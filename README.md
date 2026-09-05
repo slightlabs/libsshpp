@@ -117,7 +117,7 @@ target_link_libraries(app PRIVATE libsshpp::libsshpp)
 
 | Option | Default | Effect |
 |---|---|---|
-| `LIBSSHPP_HEADER_ONLY` | `OFF` | Build as an `INTERFACE` library (**not yet functional** — scaffolded per [09 §9.3](docs/design/09-build-and-packaging.md#93-header-only-mode), but the `.ipp` indirection isn't implemented, so a header-only consumer currently fails to link) |
+| `LIBSSHPP_HEADER_ONLY` | `OFF` | Build as an `INTERFACE` library, per [09 §9.3](docs/design/09-build-and-packaging.md#93-header-only-mode) |
 | `LIBSSHPP_WITH_SFTP` | `ON` | SFTP module |
 | `LIBSSHPP_WITH_SCP` | `ON` | SCP module |
 | `LIBSSHPP_WITH_SERVER` | `ON` | Server module (message-style API only; see status note) |

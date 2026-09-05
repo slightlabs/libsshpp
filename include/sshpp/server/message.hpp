@@ -6,6 +6,8 @@
 // ready-made SimpleAuthHandler / SftpSubsystemHandler are not implemented yet.
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/channel.hpp>
 #include <sshpp/detail/native_fwd.hpp>
 #include <sshpp/export.hpp>
@@ -80,3 +82,7 @@ private:
 };
 
 } // namespace sshpp::server
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/server_message.ipp>
+#endif

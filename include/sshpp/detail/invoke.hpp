@@ -4,6 +4,8 @@
 // Not part of the public API.
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/detail/native_fwd.hpp>
 #include <sshpp/error.hpp>
 
@@ -22,3 +24,7 @@ ErrorInfo make_sftp_error_info(native_sftp sftp, native_session session, const c
                                SourceLocation where);
 
 } // namespace sshpp::detail
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/invoke.ipp>
+#endif

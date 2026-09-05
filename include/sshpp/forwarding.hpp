@@ -9,6 +9,8 @@
 // BidirectionalPump primitives from the design are not implemented yet.
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/channel.hpp>
 #include <sshpp/detail/session_core.hpp>
 #include <sshpp/export.hpp>
@@ -166,3 +168,7 @@ private:
 };
 
 } // namespace sshpp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/forwarding.ipp>
+#endif

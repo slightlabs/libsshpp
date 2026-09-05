@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/channel.hpp>
 #include <sshpp/export.hpp>
 #include <sshpp/fwd.hpp>
@@ -69,3 +71,7 @@ private:
 SSHPP_API std::string shell_quote(std::string_view arg);
 
 } // namespace sshpp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/exec.ipp>
+#endif

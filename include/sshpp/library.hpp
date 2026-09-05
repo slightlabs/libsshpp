@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/export.hpp>
 #include <sshpp/error.hpp>
 
@@ -72,3 +74,7 @@ private:
 };
 
 } // namespace sshpp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/library.ipp>
+#endif

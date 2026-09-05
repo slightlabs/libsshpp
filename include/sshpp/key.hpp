@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/detail/native_fwd.hpp>
 #include <sshpp/export.hpp>
 #include <sshpp/result.hpp>
@@ -96,3 +98,7 @@ private:
 using PublicKey = Key;
 
 } // namespace sshpp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/key.ipp>
+#endif

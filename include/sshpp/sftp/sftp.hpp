@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 #pragma once
 
+#include <sshpp/config.hpp>
+
 #include <sshpp/detail/native_fwd.hpp>
 #include <sshpp/detail/session_core.hpp>
 #include <sshpp/export.hpp>
@@ -93,3 +95,7 @@ private:
 SSHPP_API Result<DirectoryRange> entries(Sftp&, const RemotePath&);
 
 } // namespace sshpp::sftp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/sftp.ipp>
+#endif

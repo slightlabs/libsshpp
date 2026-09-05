@@ -106,3 +106,7 @@ private:
 };
 
 } // namespace sshpp::sftp
+
+#if SSHPP_HEADER_ONLY
+#include <sshpp/detail/file.ipp>
+#endif
