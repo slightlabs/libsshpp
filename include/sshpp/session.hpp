@@ -23,6 +23,9 @@ namespace sshpp {
 #if SSHPP_WITH_SFTP
 namespace sftp { class Sftp; }
 #endif
+#if SSHPP_WITH_SCP
+namespace scp { class Reader; class Writer; enum class Mode; }
+#endif
 
 struct NegotiatedAlgorithms {
     std::string kex, host_key, cipher_in, cipher_out, hmac_in, hmac_out;
@@ -85,6 +88,10 @@ public:
 #if SSHPP_WITH_SFTP
     Result<sftp::Sftp> try_open_sftp();
 #endif
+#if SSHPP_WITH_SCP
+    Result<scp::Reader> try_open_scp_read(const RemotePath&, bool recursive = false);
+    Result<scp::Writer> try_open_scp_write(const RemotePath&, bool recursive = false);
+#endif
 
     // ---- diagnostics ------------------------------------------------------------
     void set_log_level(LogLevel);
@@ -93,6 +100,10 @@ private:
     friend class HostKeyVerifier;
 #if SSHPP_WITH_SFTP
     friend class sftp::Sftp;
+#endif
+#if SSHPP_WITH_SCP
+    friend class scp::Reader;
+    friend class scp::Writer;
 #endif
 
     detail::SessionCorePtr core_;

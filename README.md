@@ -5,13 +5,14 @@ A modern **C++17** wrapper around [libssh](https://www.libssh.org/), packaged wi
 
 > **Status: M0 + M1 + M2 implemented.** `Library`, error handling, `Session`,
 > `SessionOptions`, authenticators, `Key`/PKI, `KnownHosts`, `HostKeyVerifier` policies,
-> `Channel`, `Exec`, and the SFTP module (`sftp::Sftp`/`File`/`Directory`, transfer
-> helpers with path-traversal hardening, and pipelined `File::ReadAhead`/`WriteBehind`)
-> are implemented and tested against a real `sshd` — see [tests/](tests/),
+> `Channel`, `Exec`, the SFTP module (`sftp::Sftp`/`File`/`Directory`, transfer
+> helpers with path-traversal hardening, pipelined `File::ReadAhead`/`WriteBehind`),
+> and SCP (`scp::Reader`/`Writer` + `try_upload`/`try_download`) are implemented
+> and tested against a real `sshd` — see [tests/](tests/),
 > [examples/01_exec.cpp](examples/01_exec.cpp).
-> SCP, port forwarding, X11 and the server module (M3 in
+> Port forwarding, X11 and the server module (M3 in
 > [11 — Roadmap](docs/design/11-versioning-and-roadmap.md)) are **not implemented yet**;
-> their CMake options (`LIBSSHPP_WITH_SCP` etc.) default to `OFF` until they land.
+> their CMake options (`LIBSSHPP_WITH_SERVER` etc.) default to `OFF` until they land.
 > The design documents in [`docs/design/`](docs/design/README.md) remain the normative
 > reference — code that contradicts them is a bug in one or the other.
 
@@ -111,7 +112,7 @@ target_link_libraries(app PRIVATE libsshpp::libsshpp)
 |---|---|---|
 | `LIBSSHPP_HEADER_ONLY` | `OFF` | Build as an `INTERFACE` library |
 | `LIBSSHPP_WITH_SFTP` | `ON` | SFTP module |
-| `LIBSSHPP_WITH_SCP` | `OFF` (not yet implemented) | SCP module |
+| `LIBSSHPP_WITH_SCP` | `ON` | SCP module |
 | `LIBSSHPP_WITH_SERVER` | `OFF` (not yet implemented) | Server module |
 | `LIBSSHPP_WITH_FORWARDING` | `OFF` (not yet implemented) | Port forwarding, SOCKS, X11 |
 | `LIBSSHPP_WITH_CONSOLE` | `OFF` (not yet implemented) | tty helpers (`Shell::interact`, prompts) |
@@ -119,7 +120,7 @@ target_link_libraries(app PRIVATE libsshpp::libsshpp)
 | `LIBSSHPP_SANITIZERS` | `""` | e.g. `address;undefined` |
 
 Full list in [09 §9.2](docs/design/09-build-and-packaging.md#92-top-level-cmakeliststxt-structure).
-Note: `LIBSSHPP_WITH_SCP`, `_SERVER`, `_FORWARDING` and `_CONSOLE` currently default
+Note: `LIBSSHPP_WITH_SERVER`, `_FORWARDING` and `_CONSOLE` currently default
 to `OFF` because those modules aren't implemented yet (see the status note above).
 
 ## Building from source (current state)

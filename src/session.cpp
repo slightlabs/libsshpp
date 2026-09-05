@@ -9,6 +9,9 @@
 #if SSHPP_WITH_SFTP
 #include <sshpp/sftp/sftp.hpp>
 #endif
+#if SSHPP_WITH_SCP
+#include <sshpp/scp/scp.hpp>
+#endif
 
 namespace sshpp {
 
@@ -352,6 +355,24 @@ Result<sftp::Sftp> Session::try_open_sftp() {
     auto r = s.try_init();
     if (!r) return r.error();
     return s;
+}
+#endif
+
+#if SSHPP_WITH_SCP
+Result<scp::Reader> Session::try_open_scp_read(const RemotePath& location, bool recursive) {
+    if (!core_) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Session::try_open_scp_read"};
+    scp::Reader r(*this, location, recursive);
+    auto init_result = r.try_init();
+    if (!init_result) return init_result.error();
+    return r;
+}
+
+Result<scp::Writer> Session::try_open_scp_write(const RemotePath& destination_dir, bool recursive) {
+    if (!core_) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Session::try_open_scp_write"};
+    scp::Writer w(*this, destination_dir, recursive);
+    auto init_result = w.try_init();
+    if (!init_result) return init_result.error();
+    return w;
 }
 #endif
 

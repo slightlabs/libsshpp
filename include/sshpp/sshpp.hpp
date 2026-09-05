@@ -25,3 +25,7 @@
 #include <sshpp/sftp/algorithms.hpp>
 #include <sshpp/sftp/sftp.hpp>
 #endif
+
+#if SSHPP_WITH_SCP
+#include <sshpp/scp/scp.hpp>
+#endif
