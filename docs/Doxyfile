@@ -1,0 +1,29 @@
+# Minimal Doxygen config for the libsshpp public API reference, generated and
+# published to GitHub Pages by .github/workflows/release.yml on every tagged
+# release. Run from the repository root: `doxygen docs/Doxyfile`.
+# Unset keys fall back to Doxygen's own defaults - see `doxygen -g` for the full list.
+
+PROJECT_NAME           = "libsshpp"
+PROJECT_BRIEF          = "Modern C++17 wrapper for libssh"
+PROJECT_NUMBER         = $(LIBSSHPP_VERSION)
+
+OUTPUT_DIRECTORY       = docs/_site
+INPUT                  = include README.md
+RECURSIVE              = YES
+USE_MDFILE_AS_MAINPAGE = README.md
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+HTML_OUTPUT            = .
+
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+SORT_MEMBER_DOCS       = NO
+WARN_IF_UNDOCUMENTED   = NO
+
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+
+QUIET                  = YES

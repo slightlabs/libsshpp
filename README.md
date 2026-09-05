@@ -77,6 +77,7 @@ if (auto r = ssh.try_connect(); !r) { std::cerr << r.error().to_string(); return
 
 | Document | Contents |
 |---|---|
+| [API reference (Doxygen)](https://slightlabs.github.io/libsshpp/) | Generated from `include/sshpp/` on every tagged release |
 | [Design index](docs/design/README.md) | Start here |
 | [01 Goals and scope](docs/design/01-goals-and-scope.md) | Requirements, non-goals, platforms, licensing |
 | [02 Architecture](docs/design/02-architecture.md) | Layering, lifetime model, threading, layout, ADRs |

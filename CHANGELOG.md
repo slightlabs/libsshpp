@@ -12,6 +12,12 @@ No tagged release yet. Implementation status against the milestones in
 
 ### Added
 
+* Tag-based release process: pushing a `vX.Y.Z` tag runs
+  [.github/workflows/release.yml](.github/workflows/release.yml), which gates on the CI build
+  and test suite, then publishes a GitHub Release (auto-generated notes) and the Doxygen API
+  reference ([docs/Doxyfile](docs/Doxyfile)) to GitHub Pages at
+  <https://slightlabs.github.io/libsshpp/>.
+
 * **M0/M1 — Foundation and client core**: `Library`, error handling
   (`errc`/`sftp_errc`/`ErrorInfo`/`Result<T>`/exception hierarchy),
   `SessionOptions`, `Session`, `Key`/PKI, `KnownHosts`, `HostKeyVerifier`
