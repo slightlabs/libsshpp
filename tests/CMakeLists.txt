@@ -35,4 +35,9 @@ if(LIBSSHPP_SYSTEM_TESTS)
              COMMAND ${BASH_EXECUTABLE}
                      ${CMAKE_CURRENT_SOURCE_DIR}/integration/run_with_sshd.sh
                      $<TARGET_FILE:sshpp_integration_test>)
+    # Bound worst case; a hung test should fail fast instead of exhausting the
+    # CI job's own multi-hour budget (observed under the address/ub sanitizer
+    # build - see docs/design/10 and repo memory for the recursive_mutex
+    # starvation gotcha this is guarding against).
+    set_tests_properties(sshpp_integration PROPERTIES TIMEOUT 300)
 endif()

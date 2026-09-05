@@ -12,6 +12,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +38,7 @@ jobs:
 
   sanitizers:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         sanitizer: ["address;undefined", "thread"]
@@ -64,6 +66,7 @@ jobs:
 
   minimal:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -87,6 +90,7 @@ jobs:
 
   header-only:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
