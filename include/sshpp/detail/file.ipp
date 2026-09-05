@@ -17,7 +17,9 @@
 namespace sshpp::sftp {
 
 namespace {
+#if SSHPP_HAS_SFTP_AIO
 static_assert(std::is_same_v<native_sftp_aio, sftp_aio>, "libssh changed sftp_aio's definition");
+#endif
 } // namespace
 
 SSHPP_INLINE File::~File() {

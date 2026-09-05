@@ -295,6 +295,7 @@ SSHPP_INLINE Result<ExitState> Channel::try_wait_exit(std::chrono::milliseconds 
 SSHPP_INLINE ExitState Channel::exit_state() const noexcept {
     ExitState st;
     if (native_ == nullptr) return st;
+#if SSHPP_HAS_CHANNEL_EXIT_STATE
     uint32_t exit_code = 0;
     char* exit_signal = nullptr;
     int core_dumped = 0;
@@ -308,6 +309,12 @@ SSHPP_INLINE ExitState Channel::exit_state() const noexcept {
             st.status = static_cast<int>(exit_code);
         }
     }
+#else
+    int status = ssh_channel_get_exit_status(native_);
+    if (status >= 0) {
+        st.status = status;
+    }
+#endif
     return st;
 }
 

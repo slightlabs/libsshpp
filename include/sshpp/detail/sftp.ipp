@@ -107,6 +107,7 @@ SSHPP_INLINE int Sftp::protocol_version() const noexcept {
 
 SSHPP_INLINE Result<Limits> Sftp::try_limits() const {
     if (native_ == nullptr) return ErrorInfo{make_error_code(errc::invalid_handle), "", "Sftp::try_limits"};
+#if SSHPP_HAS_SFTP_LIMITS
     sftp_limits_t raw = sftp_limits(native_);
     if (raw == nullptr) {
         return detail::make_sftp_error_info(native_, core_->raw(), "sftp_limits", SSHPP_HERE);
@@ -118,6 +119,14 @@ SSHPP_INLINE Result<Limits> Sftp::try_limits() const {
     l.max_open_handles = raw->max_open_handles;
     sftp_limits_free(raw);
     return l;
+#else
+    Limits l;
+    l.max_packet_length = 32768;
+    l.max_read_length = 32768;
+    l.max_write_length = 32768;
+    l.max_open_handles = 0;
+    return l;
+#endif
 }
 
 SSHPP_INLINE Result<File> Sftp::try_open(const RemotePath& path, OpenMode mode, std::filesystem::perms create_perms) {
