@@ -87,4 +87,7 @@ export SSHPP_TEST_USER="$(whoami)"
 export SSHPP_TEST_KEY="$WORKDIR/clientkey"
 export SSHPP_TEST_KNOWN_HOSTS="$WORKDIR/known_hosts"
 
-"$TEST_BIN"
+# Line-buffer stdout/stderr so that if ctest ever has to kill this on a TIMEOUT, whatever
+# ran before the hang is still visible in the captured output instead of sitting lost in a
+# libc stdio block buffer (observed: CI timeouts here previously showed zero output at all).
+stdbuf -oL -eL "$TEST_BIN"
