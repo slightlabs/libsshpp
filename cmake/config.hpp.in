@@ -22,6 +22,12 @@
 #cmakedefine01 SSHPP_HAS_SERVER
 #cmakedefine01 SSHPP_HAS_GSSAPI
 
+#if SSHPP_WITH_SERVER && SSHPP_HAS_SERVER
+#  ifndef WITH_SERVER
+#    define WITH_SERVER 1
+#  endif
+#endif
+
 #if SSHPP_HEADER_ONLY
 #  define SSHPP_INLINE inline
 #else

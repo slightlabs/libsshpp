@@ -142,7 +142,6 @@ SSHPP_INLINE void TestServer::accept_loop() {
 }
 
 SSHPP_INLINE void TestServer::serve_connection(Session session) {
-    if (!session.try_handle_key_exchange()) return;
     AuthMethodSet methods;
     methods.password = options_.allow_password;
     methods.public_key = options_.allow_public_key;
@@ -150,6 +149,8 @@ SSHPP_INLINE void TestServer::serve_connection(Session session) {
 
     auto handler = std::make_shared<TestServerSessionHandler>(options_);
     if (!session.try_set_handler(handler)) return;
+
+    if (!session.try_handle_key_exchange()) return;
 
     while (!stop_requested_.load() && session) {
         auto polled = session.try_poll(std::chrono::milliseconds(200));

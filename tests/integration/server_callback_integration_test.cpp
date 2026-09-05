@@ -14,6 +14,13 @@
 #include <filesystem>
 #include <fstream>
 
+// libssh's sftp_server_init()/sftp_server_free() leaks ~192 bytes inside libssh internals.
+// Suppress this known upstream leak for LeakSanitizer.
+extern "C" const char* __lsan_default_suppressions() {
+    return "leak:sftp_server_init\n"
+           "leak:sftp_server_new\n";
+}
+
 using namespace sshpp;
 
 namespace {

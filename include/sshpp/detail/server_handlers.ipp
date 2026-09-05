@@ -201,9 +201,9 @@ SSHPP_INLINE Result<void> Session::try_poll(std::chrono::milliseconds timeout) {
     // std::recursive_mutex gives no fairness guarantee: when dopoll() keeps
     // returning quickly (active traffic), this loop could otherwise
     // reacquire the lock repeatedly and starve a subsystem thread blocked
-    // waiting for it. Yield once per iteration so the scheduler gets a
-    // chance to hand the lock to a waiter instead.
-    std::this_thread::yield();
+    // waiting for it. Sleep briefly so the scheduler gets a chance to hand
+    // the lock to a waiter instead.
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
     if (bridge_) bridge_->reap_closed_channels();
     return result;
 }
