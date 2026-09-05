@@ -7,6 +7,7 @@
 
 #include <libssh/libssh.h>
 
+#include <chrono>
 #include <cstring>
 
 #if SSHPP_WITH_CONSOLE
@@ -54,24 +55,40 @@ Result<AuthStatus> map_auth_result(int rc, native_session raw, const char* op) {
     }
 }
 
+/// Blocking-mode sessions must never surface SSH_AUTH_AGAIN to callers (docs/design/02
+/// §2.6); libssh's blocking auth calls can still return it transiently (e.g. mid-rekey), so
+/// retry `call` until it settles, bounded so a genuinely wedged peer times out instead of
+/// spinning forever.
+template <typename Fn>
+Result<AuthStatus> auth_attempt(native_session raw, const char* op, Fn&& call) {
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    for (;;) {
+        int rc = call();
+        if (rc != SSH_AUTH_AGAIN || ssh_is_blocking(raw) == 0) return map_auth_result(rc, raw, op);
+        if (std::chrono::steady_clock::now() >= deadline) {
+            return ErrorInfo{make_error_code(errc::timed_out), ssh_get_error(raw), op, SSHPP_HERE};
+        }
+    }
+}
+
 } // namespace
 
 namespace auth {
 
 SSHPP_INLINE Result<AuthStatus> None::attempt(detail::SessionCore& core) const noexcept {
-    int rc = ssh_userauth_none(core.raw(), nullptr);
-    return map_auth_result(rc, core.raw(), "ssh_userauth_none");
+    return auth_attempt(core.raw(), "ssh_userauth_none",
+                         [&] { return ssh_userauth_none(core.raw(), nullptr); });
 }
 
 SSHPP_INLINE Result<AuthStatus> Password::attempt(detail::SessionCore& core) const noexcept {
-    int rc = ssh_userauth_password(core.raw(), nullptr, password_.c_str());
-    return map_auth_result(rc, core.raw(), "ssh_userauth_password");
+    return auth_attempt(core.raw(), "ssh_userauth_password",
+                         [&] { return ssh_userauth_password(core.raw(), nullptr, password_.c_str()); });
 }
 
 SSHPP_INLINE Result<AuthStatus> PublicKeyAuto::attempt(detail::SessionCore& core) const noexcept {
     const char* pass = passphrase_.empty() ? nullptr : passphrase_.c_str();
-    int rc = ssh_userauth_publickey_auto(core.raw(), nullptr, pass);
-    return map_auth_result(rc, core.raw(), "ssh_userauth_publickey_auto");
+    return auth_attempt(core.raw(), "ssh_userauth_publickey_auto",
+                         [&] { return ssh_userauth_publickey_auto(core.raw(), nullptr, pass); });
 }
 
 SSHPP_INLINE Result<PublicKey> PublicKey::from_file(const std::filesystem::path& p, PassphraseCallback cb) {
@@ -81,15 +98,16 @@ SSHPP_INLINE Result<PublicKey> PublicKey::from_file(const std::filesystem::path&
 }
 
 SSHPP_INLINE Result<AuthStatus> PublicKey::attempt(detail::SessionCore& core) const noexcept {
-    int rc = ssh_userauth_try_publickey(core.raw(), nullptr, key_.native_handle());
-    if (rc != SSH_AUTH_SUCCESS) return map_auth_result(rc, core.raw(), "ssh_userauth_try_publickey");
-    rc = ssh_userauth_publickey(core.raw(), nullptr, key_.native_handle());
-    return map_auth_result(rc, core.raw(), "ssh_userauth_publickey");
+    auto tried = auth_attempt(core.raw(), "ssh_userauth_try_publickey",
+                               [&] { return ssh_userauth_try_publickey(core.raw(), nullptr, key_.native_handle()); });
+    if (!tried || *tried != AuthStatus::success) return tried;
+    return auth_attempt(core.raw(), "ssh_userauth_publickey",
+                         [&] { return ssh_userauth_publickey(core.raw(), nullptr, key_.native_handle()); });
 }
 
 SSHPP_INLINE Result<AuthStatus> Agent::attempt(detail::SessionCore& core) const noexcept {
-    int rc = ssh_userauth_agent(core.raw(), nullptr);
-    return map_auth_result(rc, core.raw(), "ssh_userauth_agent");
+    return auth_attempt(core.raw(), "ssh_userauth_agent",
+                         [&] { return ssh_userauth_agent(core.raw(), nullptr); });
 }
 
 SSHPP_INLINE KeyboardInteractive KeyboardInteractive::with_password(SecureString password) {
@@ -136,6 +154,9 @@ SSHPP_INLINE Result<AuthStatus> KeyboardInteractive::attempt(detail::SessionCore
             ssh_userauth_kbdint_setanswer(raw, static_cast<unsigned int>(i), (*answers)[i].c_str());
         }
         rc = ssh_userauth_kbdint(raw, nullptr, nullptr);
+    }
+    if (rc == SSH_AUTH_AGAIN) {
+        return auth_attempt(raw, "ssh_userauth_kbdint", [&] { return ssh_userauth_kbdint(raw, nullptr, nullptr); });
     }
     return map_auth_result(rc, raw, "ssh_userauth_kbdint");
 }

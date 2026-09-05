@@ -49,6 +49,20 @@ No tagged release yet. Implementation status against the milestones in
   in both compiled and header-only configurations.
 * `LICENSE` (LGPL-2.1-or-later), `THIRD_PARTY_NOTICES.md`, `SECURITY.md`.
 
+### Fixed
+
+* Authenticator `attempt()` implementations (`None`, `Password`, `PublicKeyAuto`, `PublicKey`,
+  `Agent`, `KeyboardInteractive`) now retry internally on `SSH_AUTH_AGAIN` for blocking-mode
+  sessions instead of surfacing `AuthStatus::again` to the caller, honoring the
+  "`SSH_AGAIN` is only visible in non-blocking mode" contract from docs/design/02 §2.6. A
+  wedged peer now resolves to `errc::timed_out` after 30s instead of looping forever.
+* `tests/integration/server_integration_test.cpp`: the manually-spawned server `std::thread`
+  is now joined via an RAII guard, and REQUIRE failures on that thread are caught and
+  re-reported on the main thread. Previously, any assertion failure before the thread was
+  joined destroyed a still-joinable `std::thread` (or let an exception escape a thread
+  entry point), calling `std::terminate()` and aborting the whole test binary instead of
+  failing just that one test case.
+
 ### Known gaps relative to the design
 
 See the README's status note for the full list. In short: no pcap module; the

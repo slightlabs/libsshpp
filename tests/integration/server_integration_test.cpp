@@ -7,11 +7,28 @@
 #include <sys/socket.h>
 
 #include <atomic>
+#include <exception>
 #include <thread>
 
 using namespace sshpp;
 
 namespace {
+
+/// Joins a std::thread on scope exit (including stack unwinding from a failed
+/// REQUIRE) - a joinable std::thread destroyed without join()/detach() calls
+/// std::terminate(), turning one failing assertion into a whole-binary abort.
+class ThreadJoiner {
+public:
+    explicit ThreadJoiner(std::thread& t) : thread_(t) {}
+    ~ThreadJoiner() {
+        if (thread_.joinable()) thread_.join();
+    }
+    ThreadJoiner(const ThreadJoiner&) = delete;
+    ThreadJoiner& operator=(const ThreadJoiner&) = delete;
+
+private:
+    std::thread& thread_;
+};
 
 /// Runs one accepted connection: authenticates "alice"/"s3cret" via password,
 /// accepts a session channel, replies to the exec request with a fixed
@@ -26,7 +43,7 @@ void serve_one_connection(server::Session& srv) {
     bool have_channel = false;
 
     while (!srv.authenticated() || !have_channel) {
-        auto msg_result = srv.try_next_message(std::chrono::milliseconds(5000));
+        auto msg_result = srv.try_next_message(std::chrono::milliseconds(15000));
         REQUIRE(msg_result.has_value());
         REQUIRE(msg_result->has_value());
         server::Message& msg = **msg_result;
@@ -58,7 +75,7 @@ void serve_one_connection(server::Session& srv) {
 
     // Now service channel requests on the accepted session channel until exec arrives.
     for (;;) {
-        auto msg_result = srv.try_next_message(std::chrono::milliseconds(5000));
+        auto msg_result = srv.try_next_message(std::chrono::milliseconds(15000));
         REQUIRE(msg_result.has_value());
         REQUIRE(msg_result->has_value());
         server::Message& msg = **msg_result;
@@ -101,17 +118,27 @@ TEST_CASE("sshpp server accepts a connection from an sshpp client", "[integratio
     }
     REQUIRE(port != 0);
 
-    std::thread server_thread([&bind] {
-        auto accepted = bind.try_accept();
-        REQUIRE(accepted.has_value());
-        serve_one_connection(*accepted);
+    std::exception_ptr server_exception;
+    std::thread server_thread([&bind, &server_exception] {
+        try {
+            auto accepted = bind.try_accept();
+            REQUIRE(accepted.has_value());
+            serve_one_connection(*accepted);
+        } catch (...) {
+            server_exception = std::current_exception();
+        }
     });
+    ThreadJoiner join_server_thread(server_thread);
 
     SessionOptions opts;
     opts.host = "127.0.0.1";
     opts.port = port;
     opts.user = "alice";
-    opts.timeout = std::chrono::seconds{5};
+    // More headroom than the other integration tests' 5s: this test's "server" is a
+    // std::thread sharing the CI runner's CPU with the client, not an independent
+    // process, so it can be scheduled late under load - observed spurious client-side
+    // auth timeouts under CPU-constrained stress testing with only 5s.
+    opts.timeout = std::chrono::seconds{15};
 
     Session client{opts};
     REQUIRE(client.try_connect().has_value());
@@ -127,4 +154,5 @@ TEST_CASE("sshpp server accepts a connection from an sshpp client", "[integratio
     CHECK(result->stdout_text == "hello-from-sshpp-server\n");
 
     server_thread.join();
+    if (server_exception) std::rethrow_exception(server_exception);
 }
