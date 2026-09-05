@@ -3,9 +3,15 @@
 A modern **C++17** wrapper around [libssh](https://www.libssh.org/), packaged with **CMake** and
 **Conan 2**.
 
-> **Status: design phase.** The API, architecture, build system and packaging are fully
-> specified in [`docs/design/`](docs/design/README.md). No implementation exists yet.
-> The design documents are normative — code that contradicts them is a bug in one or the other.
+> **Status: M0 + M1 implemented (client core).** `Library`, error handling, `Session`,
+> `SessionOptions`, authenticators, `Key`/PKI, `KnownHosts`, `HostKeyVerifier` policies,
+> `Channel` and `Exec` are implemented and tested against a real `sshd` — see
+> [tests/](tests/) and [examples/01_exec.cpp](examples/01_exec.cpp).
+> SFTP, SCP, port forwarding, X11 and the server module (M2/M3 in
+> [11 — Roadmap](docs/design/11-versioning-and-roadmap.md)) are **not implemented yet**;
+> their CMake options (`LIBSSHPP_WITH_SFTP` etc.) default to `OFF` until they land.
+> The design documents in [`docs/design/`](docs/design/README.md) remain the normative
+> reference — code that contradicts them is a bug in one or the other.
 
 ---
 
@@ -111,6 +117,22 @@ target_link_libraries(app PRIVATE libsshpp::libsshpp)
 | `LIBSSHPP_SANITIZERS` | `""` | e.g. `address;undefined` |
 
 Full list in [09 §9.2](docs/design/09-build-and-packaging.md#92-top-level-cmakeliststxt-structure).
+Note: `LIBSSHPP_WITH_SFTP`, `_SCP`, `_SERVER`, `_FORWARDING` and `_CONSOLE` currently default
+to `OFF` because those modules aren't implemented yet (see the status note above).
+
+## Building from source (current state)
+
+```bash
+sudo apt install libssh-dev catch2 openssh-server   # or your distro's equivalents
+cmake -S . -B build -DLIBSSHPP_BUILD_TESTS=ON -DLIBSSHPP_SYSTEM_TESTS=ON
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+```
+
+`LIBSSHPP_SYSTEM_TESTS=ON` builds an integration test that spins up a throwaway, unprivileged
+`sshd` (ephemeral host/client keys, temp `known_hosts`, high port) and exercises connect →
+verify host key → authenticate → exec end-to-end; see
+[tests/integration/run_with_sshd.sh](tests/integration/run_with_sshd.sh).
 
 ## Requirements
 

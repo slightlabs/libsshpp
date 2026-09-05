@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: LGPL-2.1-or-later
+#include <sshpp/detail/invoke.hpp>
+
+#include <libssh/libssh.h>
+
+namespace sshpp::detail {
+
+namespace {
+static_assert(std::is_same_v<native_session, ssh_session>, "libssh changed ssh_session's definition");
+} // namespace
+
+ErrorInfo make_error_info(native_session session, const char* operation, SourceLocation where,
+                          errc fallback) {
+    ErrorInfo info;
+    info.operation = operation;
+    info.where = where;
+
+    errc mapped = fallback;
+    if (session != nullptr) {
+        info.message = ssh_get_error(session);
+        int code = ssh_get_error_code(session);
+        switch (code) {
+            case SSH_NO_ERROR: mapped = fallback; break;
+            case SSH_REQUEST_DENIED: mapped = errc::request_denied; break;
+            case SSH_FATAL: mapped = errc::fatal; break;
+            case SSH_EINTR: mapped = errc::interrupted; break;
+            default: mapped = fallback; break;
+        }
+    }
+    info.code = make_error_code(mapped);
+    return info;
+}
+
+errc errc_from_auth_result(int auth_result) noexcept {
+    switch (auth_result) {
+        case SSH_AUTH_DENIED: return errc::auth_denied;
+        case SSH_AUTH_PARTIAL: return errc::auth_partial;
+        case SSH_AUTH_AGAIN: return errc::would_block;
+        case SSH_AUTH_ERROR: return errc::fatal;
+        default: return errc::auth_denied;
+    }
+}
+
+} // namespace sshpp::detail

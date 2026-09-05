@@ -1,0 +1,29 @@
+@PACKAGE_INIT@
+include(CMakeFindDependencyMacro)
+find_dependency(Threads)
+
+if(@LIBSSHPP_NEEDS_LIBSSH_DOWNSTREAM@)
+    find_dependency(libssh)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/libsshppTargets.cmake")
+
+set(libsshpp_WITH_SFTP       @LIBSSHPP_WITH_SFTP@)
+set(libsshpp_WITH_SCP        @LIBSSHPP_WITH_SCP@)
+set(libsshpp_WITH_SERVER     @LIBSSHPP_WITH_SERVER@)
+set(libsshpp_WITH_FORWARDING @LIBSSHPP_WITH_FORWARDING@)
+set(libsshpp_HEADER_ONLY     @LIBSSHPP_HEADER_ONLY@)
+
+foreach(_comp ${libsshpp_FIND_COMPONENTS})
+    string(TOUPPER "${_comp}" _comp_upper)
+    if(NOT libsshpp_WITH_${_comp_upper})
+        set(libsshpp_${_comp}_FOUND FALSE)
+        if(libsshpp_FIND_REQUIRED_${_comp})
+            set(libsshpp_NOT_FOUND_MESSAGE "libsshpp was built without component '${_comp}'")
+        endif()
+    else()
+        set(libsshpp_${_comp}_FOUND TRUE)
+    endif()
+endforeach()
+
+check_required_components(libsshpp)
