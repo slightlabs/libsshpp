@@ -63,7 +63,7 @@ jobs:
         run: pip install -r docs/requirements.txt
 
       - name: Build site
-        # Not --strict: docs/api-reference.md links to api/index.html, which is
+        # Not --strict: docs/api-reference.md links to ../api/index.html, which is
         # generated separately by Doxygen into site/api/ below and doesn't exist
         # as a doc file MkDocs can validate.
         run: mkdocs build -d site

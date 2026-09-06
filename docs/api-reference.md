@@ -2,7 +2,7 @@
 
 The full, generated API reference (every public class, function, and enum in
 [include/sshpp/](https://github.com/slightlabs/libsshpp/tree/main/include/sshpp)) is built with
-Doxygen and published alongside this site — see the [Doxygen API reference](api/index.html).
+Doxygen and published alongside this site — see the [Doxygen API reference](../api/index.html).
 
 ## Quick orientation
 
