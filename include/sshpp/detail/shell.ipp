@@ -60,10 +60,20 @@ SSHPP_INLINE Result<void> Shell::try_send_signal(Signal s) { return channel_.try
 
 #if SSHPP_WITH_CONSOLE
 
+namespace detail {
+// C++17 inline variable: true external linkage merged across every
+// translation unit, matching the fix in library.ipp - SIGWINCH is a
+// process-wide signal disposition regardless of how many TUs
+// SSHPP_HEADER_ONLY mode compiles this file into, so the flag it's stored
+// in must be too (an anonymous-namespace variable here would silently give
+// each TU its own copy, and only one TU's on_sigwinch() can ever actually be
+// the registered handler at a time).
+inline std::atomic<bool> g_shell_sigwinch_received{false};
+} // namespace detail
+
 namespace {
 
-std::atomic<bool> g_sigwinch_received{false};
-void on_sigwinch(int) { g_sigwinch_received.store(true); }
+void on_sigwinch(int) { detail::g_shell_sigwinch_received.store(true); }
 
 /// RAII terminal raw-mode toggle for fd 0 (stdin). Restores the original
 /// mode on destruction so a thrown exception or early return never leaves
@@ -104,14 +114,14 @@ SSHPP_INLINE Result<ExitState> Shell::try_interact(InteractOptions options) {
     sa.sa_handler = &on_sigwinch;
     struct sigaction old_sa{};
     ::sigaction(SIGWINCH, &sa, &old_sa);
-    g_sigwinch_received.store(false);
+    detail::g_shell_sigwinch_received.store(false);
 
     bool at_line_start = true;
     bool escape_seen = false;
     bool detach = false;
 
     while (!detach && channel_.is_open() && !channel_.is_eof()) {
-        if (g_sigwinch_received.exchange(false)) {
+        if (detail::g_shell_sigwinch_received.exchange(false)) {
             (void)try_resize(current_terminal_size());
         }
 
