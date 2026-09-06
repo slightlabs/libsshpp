@@ -4,6 +4,8 @@
 # against it with connection details in the environment, then tears everything down.
 set -euo pipefail
 
+log() { echo "[run_with_sshd $(date -u +%H:%M:%S)] $*" >&2; }
+
 TEST_BIN="${1:?usage: run_with_sshd.sh <test-binary>}"
 
 SSHD_BIN="$(command -v sshd || echo /usr/sbin/sshd)"
@@ -11,6 +13,8 @@ if [[ ! -x "$SSHD_BIN" ]]; then
     echo "sshd not found; install openssh-server to run integration tests" >&2
     exit 1
 fi
+
+log "starting; entropy_avail=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo '?')"
 
 WORKDIR="$(mktemp -d)"
 cleanup() {
@@ -22,9 +26,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+log "generating host/client keys"
 ssh-keygen -q -t ed25519 -N '' -f "$WORKDIR/hostkey"
 ssh-keygen -q -t ed25519 -N '' -f "$WORKDIR/clientkey"
 cp "$WORKDIR/clientkey.pub" "$WORKDIR/authorized_keys"
+log "keys ready; entropy_avail=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo '?')"
 
 # Retry with a fresh random port a few times in case of a rare bind collision
 # with a lingering socket from a previous run.
@@ -49,6 +55,7 @@ EOF
 
     "$SSHD_BIN" -f "$WORKDIR/sshd_config" -D -e > "$WORKDIR/sshd.log" 2>&1 &
     SSHD_PID=$!
+    log "sshd started (pid=$SSHD_PID), waiting for port $CANDIDATE_PORT"
 
     ready=0
     for _ in $(seq 1 50); do
@@ -89,6 +96,8 @@ export SSHPP_TEST_USER="$(whoami)"
 export SSHPP_TEST_KEY="$WORKDIR/clientkey"
 export SSHPP_TEST_KNOWN_HOSTS="$WORKDIR/known_hosts"
 
+log "sshd up on port $PORT; launching test binary; entropy_avail=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo '?')"
+
 # Line-buffer stdout/stderr so that if ctest ever has to kill this on a TIMEOUT, whatever
 # ran before the hang is still visible in the captured output instead of sitting lost in a
 # libc stdio block buffer (observed: CI timeouts here previously showed zero output at all).
@@ -105,11 +114,44 @@ export SSHPP_TEST_KNOWN_HOSTS="$WORKDIR/known_hosts"
 # stdout/stderr pipe open forever, so ctest would hang reading for EOF until its own
 # TIMEOUT killed the whole process tree (observed: a full-length "Timeout" ctest
 # failure immediately after the test binary itself had already printed "All tests
-# passed" and exited). Running it as a plain foreground command lets the EXIT trap
-# fire and kill sshd once the test binary exits, which also correctly propagates its
-# exit code since nothing after it modifies `$?`.
+# passed" and exited). Backgrounded and `wait`ed (rather than a plain foreground
+# command) purely so the polling loop below can watch it via `kill -0`; the EXIT
+# trap still fires and kills sshd once this script exits, and the exit code is
+# still correctly propagated via `wait`'s own status.
 if ldd "$TEST_BIN" 2>/dev/null | grep -qE 'libasan|libubsan|libtsan|libmsan'; then
-    "$TEST_BIN"
+    "$TEST_BIN" &
 else
-    stdbuf -oL -eL "$TEST_BIN"
+    stdbuf -oL -eL "$TEST_BIN" &
 fi
+TESTBIN_PID=$!
+
+# Diagnostic: if the test binary is still running well past when it normally
+# would be done, dump thread wchans/syscalls and a process snapshot to stderr
+# before ctest's own 300s TIMEOUT kills everything, so a future recurrence of
+# the still-unexplained intermittent hang here (observed repeatedly in CI,
+# essentially never reproducible locally even under heavy artificial CPU
+# stress) leaves actual evidence instead of nothing. Implemented as a plain
+# polling loop in THIS process (not a separate backgrounded watchdog) so
+# there's no separate process that could hold ctest's captured stdout/stderr
+# pipe open after this script exits - the exact class of bug fixed above for
+# sshd. `wait` returns immediately once the test binary exits either way.
+DUMPED=0
+for _ in $(seq 1 48); do  # 48 * 5s = 240s
+    if ! kill -0 "$TESTBIN_PID" 2>/dev/null; then
+        break
+    fi
+    sleep 5
+    if [[ "$DUMPED" -eq 0 ]] && [[ $((SECONDS)) -ge 240 ]]; then
+        DUMPED=1
+        log "test binary still running after ~240s; dumping diagnostics"
+        echo "entropy_avail=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || echo '?')" >&2
+        ps auxww >&2 2>/dev/null || true
+        for tid in /proc/"$TESTBIN_PID"/task/*; do
+            [[ -d "$tid" ]] || continue
+            echo "thread $(basename "$tid"): comm=$(cat "$tid/comm" 2>/dev/null) wchan=$(cat "$tid/wchan" 2>/dev/null) syscall=$(cat "$tid/syscall" 2>/dev/null)" >&2
+        done
+    fi
+done
+
+wait "$TESTBIN_PID"
+exit $?
