@@ -47,7 +47,7 @@ LogLevel ERROR
 Subsystem sftp internal-sftp
 EOF
 
-    "$SSHD_BIN" -f "$WORKDIR/sshd_config" -D -e &
+    "$SSHD_BIN" -f "$WORKDIR/sshd_config" -D -e > "$WORKDIR/sshd.log" 2>&1 &
     SSHD_PID=$!
 
     ready=0
@@ -76,6 +76,8 @@ done
 
 if [[ "$PORT" -eq 0 ]]; then
     echo "sshd never came up after several attempts" >&2
+    echo "--- last sshd log ---" >&2
+    cat "$WORKDIR/sshd.log" >&2 2>/dev/null || true
     exit 1
 fi
 
@@ -96,8 +98,18 @@ export SSHPP_TEST_KNOWN_HOSTS="$WORKDIR/known_hosts"
 # runtime must be first in the preload order. Skip stdbuf for sanitizer-instrumented
 # binaries; they flush enough on their own (and abort loudly) that buffering is a
 # non-issue there.
+#
+# Deliberately NOT `exec`d: exec would replace this shell process with the test
+# binary, discarding the `trap cleanup EXIT` above before it ever runs - sshd (still
+# running in the background) would then be orphaned holding ctest's captured
+# stdout/stderr pipe open forever, so ctest would hang reading for EOF until its own
+# TIMEOUT killed the whole process tree (observed: a full-length "Timeout" ctest
+# failure immediately after the test binary itself had already printed "All tests
+# passed" and exited). Running it as a plain foreground command lets the EXIT trap
+# fire and kill sshd once the test binary exits, which also correctly propagates its
+# exit code since nothing after it modifies `$?`.
 if ldd "$TEST_BIN" 2>/dev/null | grep -qE 'libasan|libubsan|libtsan|libmsan'; then
-    exec "$TEST_BIN"
+    "$TEST_BIN"
 else
-    exec stdbuf -oL -eL "$TEST_BIN"
+    stdbuf -oL -eL "$TEST_BIN"
 fi
